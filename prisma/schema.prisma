@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  password    String
+  role        UserRole @default(SUB_ADMIN)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+
+  // Relations
+  createdBy   User?    @relation("UserCreatedBy", fields: [createdById], references: [id])
+  createdUsers User[]  @relation("UserCreatedBy")
+  permissions UserPermission[]
+  customers   Customer[]
+  vendors     Vendor[]
+  orders      Order[]
+  activities  ActivityLog[]
+
+  @@map("users")
+}
+
+model UserPermission {
+  id         String     @id @default(cuid())
+  userId     String
+  permission Permission
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@map("user_permissions")
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  company     String?
+  country     String
+  address     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy User    @relation(fields: [createdById], references: [id])
+  orders    Order[]
+
+  @@map("customers")
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  company     String
+  country     String
+  address     String?
+  specialization String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // Relations
+  createdBy User    @relation(fields: [createdById], references: [id])
+  orders    Order[]
+
+  @@map("vendors")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  referenceNumber String      @unique
+  title           String
+  description     String?
+  type            OrderType
+  status          OrderStatus @default(YET_TO_START)
+  country         String
+  priority        Priority    @default(MEDIUM)
+  startDate       DateTime?
+  dueDate         DateTime?
+  completedDate   DateTime?
+  amount          Float?
+  paidAmount      Float       @default(0)
+  currency        String      @default("USD")
+  customerId      String
+  vendorId        String?
+  assignedToId    String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  customer   Customer      @relation(fields: [customerId], references: [id])
+  vendor     Vendor?       @relation(fields: [vendorId], references: [id])
+  assignedTo User          @relation(fields: [assignedToId], references: [id])
+  invoices   Invoice[]
+  activities ActivityLog[]
+
+  @@map("orders")
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  invoiceNumber   String        @unique
+  orderId         String
+  amount          Float
+  paidAmount      Float         @default(0)
+  currency        String        @default("USD")
+  status          InvoiceStatus @default(PENDING)
+  dueDate         DateTime
+  paidDate        DateTime?
+  imageUrl        String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String
+  description String
+  entityType  String
+  entityId    String
+  userId      String
+  orderId     String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@map("activity_logs")
+}
+
+enum UserRole {
+  ADMIN
+  SUB_ADMIN
+}
+
+enum Permission {
+  MANAGE_USERS
+  MANAGE_CUSTOMERS
+  MANAGE_VENDORS
+  MANAGE_ORDERS
+  VIEW_ANALYTICS
+  MANAGE_PAYMENTS
+  VIEW_REPORTS
+}
+
+enum OrderType {
+  PATENT
+  TRADEMARK
+  COPYRIGHT
+  DESIGN
+}
+
+enum OrderStatus {
+  YET_TO_START
+  IN_PROGRESS
+  PENDING_WITH_CLIENT
+  PENDING_PAYMENT
+  COMPLETED
+  CLOSED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
