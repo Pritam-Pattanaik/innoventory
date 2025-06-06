@@ -36,11 +36,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (specialization) {
-      whereClause.OR = [
-        ...(whereClause.OR || []),
-        { specialization: { contains: specialization, mode: 'insensitive' } },
-        { typeOfWork: { has: specialization } }
-      ]
+      if (whereClause.OR) {
+        // If search is already applied, combine with AND
+        whereClause.AND = [
+          { OR: whereClause.OR },
+          {
+            OR: [
+              { specialization: { contains: specialization, mode: 'insensitive' } },
+              { typeOfWork: { has: specialization } }
+            ]
+          }
+        ]
+        delete whereClause.OR
+      } else {
+        // If no search, just apply specialization filter
+        whereClause.OR = [
+          { specialization: { contains: specialization, mode: 'insensitive' } },
+          { typeOfWork: { has: specialization } }
+        ]
+      }
     }
 
     const vendors = await prisma.vendor.findMany({
@@ -81,6 +95,7 @@ export async function POST(request: NextRequest) {
 
     // Parse FormData
     const formData = await request.formData()
+    console.log('Received form data keys:', Array.from(formData.keys()))
 
     // Extract form fields
     const onboardingDate = formData.get('onboardingDate') as string
@@ -122,14 +137,14 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Validate company type specific fields
-    if (companyType === 'Individual' && !individualName) {
+    // Validate company type specific fields (only if company type is provided)
+    if (companyType === 'Individual' && !individualName?.trim()) {
       return NextResponse.json({
         error: 'Individual name is required for Individual company type'
       }, { status: 400 })
     }
 
-    if (companyType !== 'Individual' && !companyName) {
+    if (companyType && companyType !== 'Individual' && !companyName?.trim()) {
       return NextResponse.json({
         error: 'Company name is required for non-Individual company types'
       }, { status: 400 })
@@ -156,6 +171,14 @@ export async function POST(request: NextRequest) {
     const vendorName = companyType === 'Individual' ? individualName : companyName
     const specialization = typeOfWork.length > 0 ? typeOfWork.join(', ') : 'General'
 
+    console.log('Creating vendor with data:', {
+      vendorName,
+      email,
+      companyType,
+      typeOfWork,
+      pointsOfContact: pointsOfContact ? 'has data' : 'null'
+    })
+
     const vendor = await prisma.vendor.create({
       data: {
         // Original fields
@@ -168,7 +191,7 @@ export async function POST(request: NextRequest) {
         specialization,
 
         // New comprehensive fields
-        onboardingDate: onboardingDate ? new Date(onboardingDate) : null,
+        onboardingDate: onboardingDate && onboardingDate.trim() ? new Date(onboardingDate) : null,
         companyType: companyType || null,
         companyName: companyName || null,
         individualName: individualName || null,
@@ -177,7 +200,7 @@ export async function POST(request: NextRequest) {
         username: username || null,
         gstNumber: gstNumber || null,
         startupBenefits: startupBenefits || null,
-        typeOfWork,
+        typeOfWork: typeOfWork || [],
         pointsOfContact: pointsOfContact ? JSON.stringify(pointsOfContact) : null,
 
         // File URLs

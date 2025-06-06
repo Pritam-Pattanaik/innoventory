@@ -22,7 +22,11 @@
                 formData.append('phone', '+1234567890');
                 formData.append('address', '123 Test Street');
                 formData.append('country', 'United States');
+                formData.append('city', 'New York');
+                formData.append('state', 'New York');
+                formData.append('username', 'testuser' + Date.now());
                 formData.append('typeOfWork', JSON.stringify(['Patents', 'Trademarks']));
+                formData.append('pointsOfContact', JSON.stringify([]));
 
                 // Get token from localStorage (assuming user is logged in)
                 const token = localStorage.getItem('token');
