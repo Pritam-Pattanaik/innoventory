@@ -2,8 +2,20 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Building2, Mail, Phone, Building, MapPin, Globe, Award } from 'lucide-react'
+import {
+  X, Building2, Mail, Phone, Building, MapPin, Globe, Award,
+  Calendar, Upload, User, Plus, Trash2, FileText
+} from 'lucide-react'
 import anime from 'animejs'
+
+interface PointOfContact {
+  id: string
+  name: string
+  phone: string
+  countryCode: string
+  email: string
+  areaOfExpertise: string
+}
 
 interface AddVendorFormProps {
   isOpen: boolean
@@ -16,27 +28,89 @@ const countries = [
   'France', 'Italy', 'Spain', 'Netherlands', 'Japan', 'India', 'Brazil'
 ]
 
-const specializations = [
-  'Patent Law',
-  'Trademark Registration',
-  'Copyright Law',
-  'Design Patents',
-  'International Patents',
-  'IP Litigation',
-  'Trade Secrets',
-  'IP Licensing'
+const states = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
+  'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala',
+  'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
+  'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Chandigarh', 'Puducherry'
+]
+
+const cities = [
+  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune',
+  'Ahmedabad', 'Jaipur', 'Surat', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore',
+  'Thane', 'Bhopal', 'Visakhapatnam', 'Pimpri-Chinchwad', 'Patna', 'Vadodara'
+]
+
+const companyTypes = [
+  'Pvt. Limited',
+  'MSME',
+  'Firm',
+  'Individual',
+  'Partnership',
+  'LLP'
+]
+
+const countryCodes = [
+  { code: '+91', country: 'India' },
+  { code: '+1', country: 'US/Canada' },
+  { code: '+44', country: 'UK' },
+  { code: '+49', country: 'Germany' },
+  { code: '+33', country: 'France' },
+  { code: '+61', country: 'Australia' },
+  { code: '+81', country: 'Japan' },
+  { code: '+86', country: 'China' }
+]
+
+const areasOfExpertise = [
+  'Patents',
+  'Trademarks',
+  'Copyrights',
+  'Designs',
+  'Consultancy',
+  'Legal Affairs',
+  'Technical Writing',
+  'Prior Art Search',
+  'Patent Prosecution',
+  'IP Litigation'
+]
+
+const workTypes = [
+  'Patents',
+  'Trademarks',
+  'Copyrights',
+  'Designs',
+  'Consultancy',
+  'Others'
 ]
 
 const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
   const [formData, setFormData] = useState({
-    name: '',
+    onboardingDate: '',
+    companyType: '',
+    companyName: '',
+    individualName: '',
     email: '',
     phone: '',
-    company: '',
-    country: '',
     address: '',
-    specialization: ''
+    city: '',
+    state: '',
+    country: '',
+    username: '',
+    gstNumber: '',
+    startupBenefits: '',
+    typeOfWork: [] as string[]
   })
+
+  const [pointsOfContact, setPointsOfContact] = useState<PointOfContact[]>([])
+  const [files, setFiles] = useState({
+    gstFile: null as File | null,
+    nda: null as File | null,
+    agreement: null as File | null,
+    companyLogo: null as File | null,
+    otherDocuments: [] as File[]
+  })
+
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -49,15 +123,62 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
     }
   }
 
+  const handleWorkTypeChange = (workType: string) => {
+    setFormData(prev => ({
+      ...prev,
+      typeOfWork: prev.typeOfWork.includes(workType)
+        ? prev.typeOfWork.filter(type => type !== workType)
+        : [...prev.typeOfWork, workType]
+    }))
+  }
+
+  const handleFileChange = (field: string, file: File | null) => {
+    setFiles(prev => ({ ...prev, [field]: file }))
+  }
+
+  const addPointOfContact = () => {
+    const newContact: PointOfContact = {
+      id: Date.now().toString(),
+      name: '',
+      phone: '',
+      countryCode: '+91',
+      email: '',
+      areaOfExpertise: ''
+    }
+    setPointsOfContact(prev => [...prev, newContact])
+  }
+
+  const removePointOfContact = (id: string) => {
+    setPointsOfContact(prev => prev.filter(contact => contact.id !== id))
+  }
+
+  const updatePointOfContact = (id: string, field: string, value: string) => {
+    setPointsOfContact(prev => prev.map(contact =>
+      contact.id === id ? { ...contact, [field]: value } : contact
+    ))
+  }
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    
-    if (!formData.name.trim()) newErrors.name = 'Name is required'
+
+    if (!formData.onboardingDate) newErrors.onboardingDate = 'Onboarding date is required'
+    if (!formData.companyType) newErrors.companyType = 'Company type is required'
+
+    if (formData.companyType === 'Individual') {
+      if (!formData.individualName.trim()) newErrors.individualName = 'Individual name is required'
+    } else {
+      if (!formData.companyName.trim()) newErrors.companyName = 'Company name is required'
+    }
+
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
-    if (!formData.company.trim()) newErrors.company = 'Company is required'
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required'
+    if (!formData.address.trim()) newErrors.address = 'Address is required'
+    if (!formData.city) newErrors.city = 'City is required'
+    if (!formData.state) newErrors.state = 'State is required'
     if (!formData.country) newErrors.country = 'Country is required'
-    if (!formData.specialization) newErrors.specialization = 'Specialization is required'
+    if (!formData.username.trim()) newErrors.username = 'Username is required'
+    if (formData.typeOfWork.length === 0) newErrors.typeOfWork = 'At least one type of work is required'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -65,12 +186,13 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       // Animate error fields
       const errorFields = Object.keys(errors)
       errorFields.forEach(field => {
-        const element = document.querySelector(`[name="${field}"]`)
+        const element = document.querySelector(`[name="${field}"]`) ||
+                      document.querySelector(`[data-field="${field}"]`)
         if (element) {
           anime({
             targets: element,
@@ -87,13 +209,41 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
 
     try {
       const token = localStorage.getItem('token')
+
+      // Create FormData for file uploads
+      const submitData = new FormData()
+
+      // Add form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'typeOfWork') {
+          submitData.append(key, JSON.stringify(value))
+        } else {
+          submitData.append(key, value as string)
+        }
+      })
+
+      // Add points of contact
+      submitData.append('pointsOfContact', JSON.stringify(pointsOfContact))
+
+      // Add files
+      Object.entries(files).forEach(([key, value]) => {
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((file, index) => {
+              submitData.append(`${key}[${index}]`, file)
+            })
+          } else {
+            submitData.append(key, value)
+          }
+        }
+      })
+
       const response = await fetch('/api/vendors', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: submitData
       })
 
       const data = await response.json()
@@ -112,13 +262,28 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
 
       // Reset form
       setFormData({
-        name: '',
+        onboardingDate: '',
+        companyType: '',
+        companyName: '',
+        individualName: '',
         email: '',
         phone: '',
-        company: '',
-        country: '',
         address: '',
-        specialization: ''
+        city: '',
+        state: '',
+        country: '',
+        username: '',
+        gstNumber: '',
+        startupBenefits: '',
+        typeOfWork: []
+      })
+      setPointsOfContact([])
+      setFiles({
+        gstFile: null,
+        nda: null,
+        agreement: null,
+        companyLogo: null,
+        otherDocuments: []
       })
 
       onSuccess()
@@ -140,7 +305,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="form-container bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="form-container bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -157,145 +322,511 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-8">
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {errors.submit}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Building2 className="inline h-4 w-4 mr-1" />
-                Contact Name *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter contact name"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+          {/* Basic Information */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              Basic Information
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Onboarding Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Vendor Onboarding Date *
+                </label>
+                <input
+                  type="date"
+                  name="onboardingDate"
+                  value={formData.onboardingDate}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.onboardingDate ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.onboardingDate && <p className="text-red-500 text-sm mt-1">{errors.onboardingDate}</p>}
+              </div>
+
+              {/* Company Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Building className="inline h-4 w-4 mr-1" />
+                  Company Type *
+                </label>
+                <select
+                  name="companyType"
+                  value={formData.companyType}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.companyType ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select company type</option>
+                  {companyTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                {errors.companyType && <p className="text-red-500 text-sm mt-1">{errors.companyType}</p>}
+              </div>
+
+              {/* Username */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="inline h-4 w-4 mr-1" />
+                  Username *
+                </label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.username ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter username"
+                />
+                {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
+              </div>
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Mail className="inline h-4 w-4 mr-1" />
-                Email Address *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter email address"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Company Name / Individual Name */}
+              {formData.companyType === 'Individual' ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <User className="inline h-4 w-4 mr-1" />
+                    Individual Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="individualName"
+                    value={formData.individualName}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                      errors.individualName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter individual name"
+                  />
+                  {errors.individualName && <p className="text-red-500 text-sm mt-1">{errors.individualName}</p>}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Building className="inline h-4 w-4 mr-1" />
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                      errors.companyName ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter company name"
+                  />
+                  {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
+                </div>
+              )}
 
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Phone className="inline h-4 w-4 mr-1" />
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                placeholder="Enter phone number"
-              />
-            </div>
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="inline h-4 w-4 mr-1" />
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter email address"
+                />
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              </div>
 
-            {/* Company */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Building className="inline h-4 w-4 mr-1" />
-                Company Name *
-              </label>
-              <input
-                type="text"
-                name="company"
-                value={formData.company}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.company ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter company name"
-              />
-              {errors.company && <p className="text-red-500 text-sm mt-1">{errors.company}</p>}
-            </div>
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="inline h-4 w-4 mr-1" />
+                  Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter phone number"
+                />
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+              </div>
 
-            {/* Country */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Globe className="inline h-4 w-4 mr-1" />
-                Country *
-              </label>
-              <select
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.country ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select country</option>
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </select>
-              {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
-            </div>
-
-            {/* Specialization */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Award className="inline h-4 w-4 mr-1" />
-                Specialization *
-              </label>
-              <select
-                name="specialization"
-                value={formData.specialization}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                  errors.specialization ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select specialization</option>
-                {specializations.map(spec => (
-                  <option key={spec} value={spec}>{spec}</option>
-                ))}
-              </select>
-              {errors.specialization && <p className="text-red-500 text-sm mt-1">{errors.specialization}</p>}
+              {/* GST Number */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileText className="inline h-4 w-4 mr-1" />
+                  GST Number
+                </label>
+                <input
+                  type="text"
+                  name="gstNumber"
+                  value={formData.gstNumber}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                  placeholder="Enter GST number"
+                />
+              </div>
             </div>
 
             {/* Address */}
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <MapPin className="inline h-4 w-4 mr-1" />
-                Address
+                Address *
               </label>
               <textarea
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                  errors.address ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Enter full address"
               />
+              {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address}</p>}
+            </div>
+
+            {/* Location Details */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* City */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  City *
+                </label>
+                <select
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.city ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select city</option>
+                  {cities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+                {errors.city && <p className="text-red-500 text-sm mt-1">{errors.city}</p>}
+              </div>
+
+              {/* State */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  State *
+                </label>
+                <select
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.state ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select state</option>
+                  {states.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+                {errors.state && <p className="text-red-500 text-sm mt-1">{errors.state}</p>}
+              </div>
+
+              {/* Country */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Globe className="inline h-4 w-4 mr-1" />
+                  Country *
+                </label>
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                    errors.country ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select country</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+                {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Points of Contact */}
+          {formData.companyType && formData.companyType !== 'Individual' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2 flex-1">
+                  Points of Contact
+                </h3>
+                <button
+                  type="button"
+                  onClick={addPointOfContact}
+                  className="ml-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Contact
+                </button>
+              </div>
+
+              {pointsOfContact.map((contact, index) => (
+                <div key={contact.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-medium text-gray-900">Contact {index + 1}</h4>
+                    <button
+                      type="button"
+                      onClick={() => removePointOfContact(contact.id)}
+                      className="text-red-600 hover:text-red-800 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Contact Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={contact.name}
+                        onChange={(e) => updatePointOfContact(contact.id, 'name', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                        placeholder="Enter contact name"
+                      />
+                    </div>
+
+                    {/* Contact Email */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={contact.email}
+                        onChange={(e) => updatePointOfContact(contact.id, 'email', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                        placeholder="Enter email address"
+                      />
+                    </div>
+
+                    {/* Contact Phone */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number *
+                      </label>
+                      <div className="flex">
+                        <select
+                          value={contact.countryCode}
+                          onChange={(e) => updatePointOfContact(contact.id, 'countryCode', e.target.value)}
+                          className="px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors bg-gray-50"
+                        >
+                          {countryCodes.map(cc => (
+                            <option key={cc.code} value={cc.code}>
+                              {cc.code} ({cc.country})
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          value={contact.phone}
+                          onChange={(e) => updatePointOfContact(contact.id, 'phone', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-l-0 border-gray-300 rounded-r-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                          placeholder="Enter phone number"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Area of Expertise */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Area of Expertise *
+                      </label>
+                      <select
+                        value={contact.areaOfExpertise}
+                        onChange={(e) => updatePointOfContact(contact.id, 'areaOfExpertise', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                      >
+                        <option value="">Select area of expertise</option>
+                        {areasOfExpertise.map(area => (
+                          <option key={area} value={area}>{area}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Type of Work */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              Type of Work
+            </h3>
+
+            <div
+              data-field="typeOfWork"
+              className={`space-y-3 p-4 border rounded-lg ${
+                errors.typeOfWork ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50'
+              }`}
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Select types of work (multiple selection allowed) *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {workTypes.map(workType => (
+                  <motion.label
+                    key={workType}
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.typeOfWork.includes(workType)}
+                      onChange={() => handleWorkTypeChange(workType)}
+                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                    />
+                    <span className="text-sm font-medium text-gray-900">{workType}</span>
+                  </motion.label>
+                ))}
+              </div>
+            </div>
+            {errors.typeOfWork && <p className="text-red-500 text-sm mt-1">{errors.typeOfWork}</p>}
+
+            {/* Startup Benefits */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Award className="inline h-4 w-4 mr-1" />
+                  Startup Benefits
+                </label>
+                <select
+                  name="startupBenefits"
+                  value={formData.startupBenefits}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                >
+                  <option value="">Select option</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* File Uploads */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
+              Document Uploads
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* GST File */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Upload className="inline h-4 w-4 mr-1" />
+                  GST File
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={(e) => handleFileChange('gstFile', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-1">Accepted formats: PDF, JPG, PNG, DOC, DOCX</p>
+              </div>
+
+              {/* NDA */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileText className="inline h-4 w-4 mr-1" />
+                  NDA Document
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileChange('nda', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-1">Accepted formats: PDF, DOC, DOCX</p>
+              </div>
+
+              {/* Agreement */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileText className="inline h-4 w-4 mr-1" />
+                  Agreement Document
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => handleFileChange('agreement', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-1">Accepted formats: PDF, DOC, DOCX</p>
+              </div>
+
+              {/* Company Logo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Upload className="inline h-4 w-4 mr-1" />
+                  Company Logo
+                </label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.svg"
+                  onChange={(e) => handleFileChange('companyLogo', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                />
+                <p className="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG, SVG</p>
+              </div>
+            </div>
+
+            {/* Other Documents */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Upload className="inline h-4 w-4 mr-1" />
+                Other Documents
+              </label>
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={(e) => {
+                  const fileList = Array.from(e.target.files || [])
+                  setFiles(prev => ({ ...prev, otherDocuments: fileList }))
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+              />
+              <p className="text-xs text-gray-500 mt-1">Multiple files allowed. Accepted formats: PDF, JPG, PNG, DOC, DOCX</p>
             </div>
           </div>
 
