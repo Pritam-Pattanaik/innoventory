@@ -161,24 +161,19 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.onboardingDate) newErrors.onboardingDate = 'Onboarding date is required'
-    if (!formData.companyType) newErrors.companyType = 'Company type is required'
-
-    if (formData.companyType === 'Individual') {
-      if (!formData.individualName.trim()) newErrors.individualName = 'Individual name is required'
-    } else {
-      if (!formData.companyName.trim()) newErrors.companyName = 'Company name is required'
-    }
-
+    // Only validate fields that are actually required by the API
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required'
-    if (!formData.address.trim()) newErrors.address = 'Address is required'
-    if (!formData.city) newErrors.city = 'City is required'
-    if (!formData.state) newErrors.state = 'State is required'
+
     if (!formData.country) newErrors.country = 'Country is required'
-    if (!formData.username.trim()) newErrors.username = 'Username is required'
-    if (formData.typeOfWork.length === 0) newErrors.typeOfWork = 'At least one type of work is required'
+
+    // Company type specific validation (only if company type is selected)
+    if (formData.companyType === 'Individual' && !formData.individualName.trim()) {
+      newErrors.individualName = 'Individual name is required for Individual company type'
+    }
+    if (formData.companyType && formData.companyType !== 'Individual' && !formData.companyName.trim()) {
+      newErrors.companyName = 'Company name is required for non-Individual company types'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -342,7 +337,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Calendar className="inline h-4 w-4 mr-1" />
-                  Vendor Onboarding Date *
+                  Vendor Onboarding Date
                 </label>
                 <input
                   type="date"
@@ -360,7 +355,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Building className="inline h-4 w-4 mr-1" />
-                  Company Type *
+                  Company Type
                 </label>
                 <select
                   name="companyType"
@@ -382,7 +377,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <User className="inline h-4 w-4 mr-1" />
-                  Username *
+                  Username
                 </label>
                 <input
                   type="text"
@@ -461,7 +456,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Phone className="inline h-4 w-4 mr-1" />
-                  Phone Number *
+                  Phone Number
                 </label>
                 <input
                   type="tel"
@@ -497,7 +492,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <MapPin className="inline h-4 w-4 mr-1" />
-                Address *
+                Address
               </label>
               <textarea
                 name="address"
@@ -517,7 +512,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               {/* City */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City *
+                  City
                 </label>
                 <select
                   name="city"
@@ -538,7 +533,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               {/* State */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State *
+                  State
                 </label>
                 <select
                   name="state"
@@ -701,7 +696,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               }`}
             >
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Select types of work (multiple selection allowed) *
+                Select types of work (multiple selection allowed)
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {workTypes.map(workType => (
