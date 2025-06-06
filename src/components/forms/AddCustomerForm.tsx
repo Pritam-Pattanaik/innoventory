@@ -140,7 +140,7 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
       newErrors.companyName = 'Company name is required for non-Individual company types'
     }
 
-    // Point of contact validation for Individual type
+    // Point of contact validation for Individual type only
     if (formData.companyType === 'Individual') {
       if (!pointOfContact.name.trim()) newErrors.pointOfContactName = 'Point of contact name is required for Individual'
       if (!pointOfContact.email.trim()) newErrors.pointOfContactEmail = 'Point of contact email is required for Individual'
@@ -529,7 +529,7 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
               <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                 <User className="inline w-5 h-5 mr-2" />
                 Point of Contact
-                {formData.companyType !== 'Individual' && (
+                {formData.companyType !== 'Individual' && formData.companyType !== '' && (
                   <span className="ml-2 text-sm text-gray-500">(Disabled for non-Individual types)</span>
                 )}
               </h3>
