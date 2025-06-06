@@ -305,10 +305,10 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="form-container bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto"
+        className="form-container bg-white rounded-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white rounded-t-xl">
           <h2 className="text-2xl font-bold text-gray-900 flex items-center">
             <Building2 className="mr-3 h-6 w-6 text-green-600" />
             Add New Vendor
@@ -322,7 +322,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-8">
+        <form onSubmit={handleSubmit} className="p-6 space-y-8 bg-white rounded-b-xl">
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {errors.submit}
@@ -596,7 +596,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
               </div>
 
               {pointsOfContact.map((contact, index) => (
-                <div key={contact.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div key={contact.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-medium text-gray-900">Contact {index + 1}</h4>
                     <button
@@ -694,8 +694,8 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
 
             <div
               data-field="typeOfWork"
-              className={`space-y-3 p-4 border rounded-lg ${
-                errors.typeOfWork ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-gray-50'
+              className={`space-y-3 p-4 border rounded-lg shadow-sm ${
+                errors.typeOfWork ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'
               }`}
             >
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -705,7 +705,7 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
                 {workTypes.map(workType => (
                   <motion.label
                     key={workType}
-                    className="flex items-center space-x-2 cursor-pointer hover:bg-white p-2 rounded-lg transition-colors"
+                    className="flex items-center space-x-2 cursor-pointer hover:bg-gray-50 p-3 rounded-lg transition-colors border border-gray-200 bg-white shadow-sm"
                     whileHover={{ scale: 1.02 }}
                   >
                     <input
