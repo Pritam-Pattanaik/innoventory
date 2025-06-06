@@ -58,20 +58,41 @@ model Customer {
 }
 
 model Vendor {
-  id             String   @id @default(cuid())
-  name           String
-  email          String   @unique
-  phone          String?
-  company        String
-  country        String
-  address        String?
-  specialization String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  createdById    String
-  orders         Order[]
-  createdBy      User     @relation(fields: [createdById], references: [id])
+  id              String   @id @default(cuid())
+  name            String
+  email           String   @unique
+  phone           String?
+  company         String
+  country         String
+  address         String?
+  specialization  String?
+
+  // New comprehensive fields
+  onboardingDate  DateTime?
+  companyType     String?
+  companyName     String?
+  individualName  String?
+  city            String?
+  state           String?
+  username        String?
+  gstNumber       String?
+  startupBenefits String?
+  typeOfWork      String[] // Array of work types
+  pointsOfContact String?  // JSON string of contacts
+
+  // File URLs
+  gstFileUrl      String?
+  ndaFileUrl      String?
+  agreementFileUrl String?
+  companyLogoUrl  String?
+  otherDocsUrls   String[] // Array of document URLs
+
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdById     String
+  orders          Order[]
+  createdBy       User     @relation(fields: [createdById], references: [id])
 
   @@map("vendors")
 }
