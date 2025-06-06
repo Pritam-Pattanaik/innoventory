@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, User, Mail, Phone, Building, MapPin, Globe } from 'lucide-react'
+import { X, User, Mail, Phone, Building, MapPin, Globe, Calendar, FileText, Upload, Award } from 'lucide-react'
 import anime from 'animejs'
 
 interface AddCustomerFormProps {
@@ -11,20 +11,81 @@ interface AddCustomerFormProps {
   onSuccess: () => void
 }
 
+interface PointOfContact {
+  id: string
+  name: string
+  phone: string
+  email: string
+}
+
+const companyTypes = [
+  'Startup',
+  'DPIIT',
+  'MSME',
+  'Small Entity',
+  'Large Entity',
+  'Individual'
+]
+
 const countries = [
   'United States', 'United Kingdom', 'Germany', 'Canada', 'Australia',
   'France', 'Italy', 'Spain', 'Netherlands', 'Japan', 'India', 'Brazil'
 ]
 
+const cities = [
+  'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia',
+  'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
+  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata',
+  'London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Liverpool'
+]
+
+const states = [
+  'California', 'Texas', 'Florida', 'New York', 'Pennsylvania', 'Illinois',
+  'Ohio', 'Georgia', 'North Carolina', 'Michigan', 'New Jersey', 'Virginia',
+  'Maharashtra', 'Karnataka', 'Tamil Nadu', 'Telangana', 'Gujarat', 'Rajasthan',
+  'England', 'Scotland', 'Wales', 'Northern Ireland'
+]
+
 const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) => {
   const [formData, setFormData] = useState({
-    name: '',
+    clientOnboardingDate: '',
+    companyType: '',
+    companyName: '',
+    individualName: '',
     email: '',
     phone: '',
-    company: '',
+    address: '',
+    city: '',
+    state: '',
     country: '',
-    address: ''
+    username: '',
+    gstNumber: '',
+    dpiitRegister: ''
   })
+
+  const [dpiitData, setDpiitData] = useState({
+    validTill: '',
+    certificate: null as File | null
+  })
+
+  const [pointOfContact, setPointOfContact] = useState<PointOfContact>({
+    id: '1',
+    name: '',
+    phone: '',
+    email: ''
+  })
+
+  const [files, setFiles] = useState({
+    tdsFile: null as File | null,
+    gstFile: null as File | null,
+    nda: null as File | null,
+    agreement: null as File | null,
+    quotation: null as File | null,
+    panCard: null as File | null,
+    udhyamRegistration: null as File | null,
+    others: [] as File[]
+  })
+
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -37,14 +98,54 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
     }
   }
 
+  const handleDpiitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setDpiitData(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handlePointOfContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPointOfContact(prev => ({ ...prev, [name]: value }))
+  }
+
+  const handleFileChange = (field: string, file: File | null) => {
+    if (field === 'dpiitCertificate') {
+      setDpiitData(prev => ({ ...prev, certificate: file }))
+    } else {
+      setFiles(prev => ({ ...prev, [field]: file }))
+    }
+  }
+
+  const handleMultipleFileChange = (files: FileList | null) => {
+    if (files) {
+      const fileArray = Array.from(files)
+      setFiles(prev => ({ ...prev, others: fileArray }))
+    }
+  }
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    
-    if (!formData.name.trim()) newErrors.name = 'Name is required'
+
+    // Required fields validation
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
-    if (!formData.company.trim()) newErrors.company = 'Company is required'
+
     if (!formData.country) newErrors.country = 'Country is required'
+
+    // Company type specific validation
+    if (formData.companyType === 'Individual' && !formData.individualName.trim()) {
+      newErrors.individualName = 'Individual name is required for Individual company type'
+    }
+    if (formData.companyType && formData.companyType !== 'Individual' && !formData.companyName.trim()) {
+      newErrors.companyName = 'Company name is required for non-Individual company types'
+    }
+
+    // Point of contact validation for Individual type
+    if (formData.companyType === 'Individual') {
+      if (!pointOfContact.name.trim()) newErrors.pointOfContactName = 'Point of contact name is required for Individual'
+      if (!pointOfContact.email.trim()) newErrors.pointOfContactEmail = 'Point of contact email is required for Individual'
+      if (!pointOfContact.phone.trim()) newErrors.pointOfContactPhone = 'Point of contact phone is required for Individual'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -52,12 +153,13 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       // Animate error fields
       const errorFields = Object.keys(errors)
       errorFields.forEach(field => {
-        const element = document.querySelector(`[name="${field}"]`)
+        const element = document.querySelector(`[name="${field}"]`) ||
+                      document.querySelector(`[data-field="${field}"]`)
         if (element) {
           anime({
             targets: element,
@@ -74,19 +176,53 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
 
     try {
       const token = localStorage.getItem('token')
+
+      // Create FormData for file uploads
+      const submitData = new FormData()
+
+      // Add form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        submitData.append(key, value as string)
+      })
+
+      // Add point of contact data
+      submitData.append('pointOfContact', JSON.stringify(pointOfContact))
+
+      // Add DPIIT data if applicable
+      if (formData.dpiitRegister === 'Yes') {
+        submitData.append('dpiitValidTill', dpiitData.validTill)
+        if (dpiitData.certificate) {
+          submitData.append('dpiitCertificate', dpiitData.certificate)
+        }
+      }
+
+      // Add files
+      Object.entries(files).forEach(([key, value]) => {
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((file, index) => {
+              submitData.append(`${key}[${index}]`, file)
+            })
+          } else {
+            submitData.append(key, value)
+          }
+        }
+      })
+
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: submitData
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create customer')
+        const errorMessage = data.error || `Failed to create customer (${response.status})`
+        const details = data.details ? ` - ${data.details}` : ''
+        throw new Error(errorMessage + details)
       }
 
       // Success animation
@@ -99,12 +235,42 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
 
       // Reset form
       setFormData({
-        name: '',
+        clientOnboardingDate: '',
+        companyType: '',
+        companyName: '',
+        individualName: '',
         email: '',
         phone: '',
-        company: '',
+        address: '',
+        city: '',
+        state: '',
         country: '',
-        address: ''
+        username: '',
+        gstNumber: '',
+        dpiitRegister: ''
+      })
+
+      setDpiitData({
+        validTill: '',
+        certificate: null
+      })
+
+      setPointOfContact({
+        id: '1',
+        name: '',
+        phone: '',
+        email: ''
+      })
+
+      setFiles({
+        tdsFile: null,
+        gstFile: null,
+        nda: null,
+        agreement: null,
+        quotation: null,
+        panCard: null,
+        udhyamRegistration: null,
+        others: []
       })
 
       onSuccess()
@@ -150,116 +316,534 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name */}
+          <div className="space-y-6">
+            {/* Client Onboarding Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="inline h-4 w-4 mr-1" />
-                Full Name *
+                <Calendar className="inline w-4 h-4 mr-2" />
+                Client Onboarding Date
               </label>
               <input
-                type="text"
-                name="name"
-                value={formData.name}
+                type="date"
+                name="clientOnboardingDate"
+                value={formData.clientOnboardingDate}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.clientOnboardingDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
                 }`}
-                placeholder="Enter full name"
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              {errors.clientOnboardingDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.clientOnboardingDate}</p>
+              )}
             </div>
 
-            {/* Email */}
+            {/* Type of Company */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Mail className="inline h-4 w-4 mr-1" />
-                Email Address *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter email address"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-
-            {/* Phone */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Phone className="inline h-4 w-4 mr-1" />
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Enter phone number"
-              />
-            </div>
-
-            {/* Company */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Building className="inline h-4 w-4 mr-1" />
-                Company Name *
-              </label>
-              <input
-                type="text"
-                name="company"
-                value={formData.company}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.company ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter company name"
-              />
-              {errors.company && <p className="text-red-500 text-sm mt-1">{errors.company}</p>}
-            </div>
-
-            {/* Country */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Globe className="inline h-4 w-4 mr-1" />
-                Country *
+                <Building className="inline w-4 h-4 mr-2" />
+                Type of Company
               </label>
               <select
-                name="country"
-                value={formData.country}
+                name="companyType"
+                value={formData.companyType}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.country ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.companyType ? 'border-red-500 bg-red-50' : 'border-gray-300'
                 }`}
               >
-                <option value="">Select country</option>
-                {countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
+                <option value="">Select company type</option>
+                {companyTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
                 ))}
               </select>
-              {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
+              {errors.companyType && (
+                <p className="mt-1 text-sm text-red-600">{errors.companyType}</p>
+              )}
+            </div>
+
+            {/* Company Name / Individual Name */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Building className="inline w-4 h-4 mr-2" />
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleChange}
+                  disabled={formData.companyType === 'Individual'}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    formData.companyType === 'Individual' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  } ${errors.companyName ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                  placeholder="Enter company name"
+                />
+                {errors.companyName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="inline w-4 h-4 mr-2" />
+                  Individual Name
+                </label>
+                <input
+                  type="text"
+                  name="individualName"
+                  value={formData.individualName}
+                  onChange={handleChange}
+                  disabled={formData.companyType !== 'Individual' && formData.companyType !== ''}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    formData.companyType !== 'Individual' && formData.companyType !== '' ? 'bg-gray-100 cursor-not-allowed' : ''
+                  } ${errors.individualName ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                  placeholder="Enter individual name"
+                />
+                {errors.individualName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.individualName}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Email and Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="inline w-4 h-4 mr-2" />
+                  Company's Email ID *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter company email"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="inline w-4 h-4 mr-2" />
+                  Company's Number
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter company phone number"
+                />
+              </div>
             </div>
 
             {/* Address */}
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="inline h-4 w-4 mr-1" />
-                Address
+                <MapPin className="inline w-4 h-4 mr-2" />
+                Company's Address
               </label>
               <textarea
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Enter full address"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter company address"
               />
+            </div>
+
+            {/* City, State, Country */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="inline w-4 h-4 mr-2" />
+                  City
+                </label>
+                <select
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="">Select city</option>
+                  {cities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="inline w-4 h-4 mr-2" />
+                  State
+                </label>
+                <select
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="">Select state</option>
+                  {states.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Globe className="inline w-4 h-4 mr-2" />
+                  Country *
+                </label>
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.country ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select country</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+                {errors.country && (
+                  <p className="mt-1 text-sm text-red-600">{errors.country}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Point of Contact Section */}
+            <div className={`border rounded-lg p-4 transition-all duration-200 ${
+              formData.companyType === 'Individual' ? 'bg-blue-50 border-blue-200' : 'bg-gray-100 border-gray-300'
+            }`}>
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <User className="inline w-5 h-5 mr-2" />
+                Point of Contact
+                {formData.companyType !== 'Individual' && (
+                  <span className="ml-2 text-sm text-gray-500">(Disabled for non-Individual types)</span>
+                )}
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={pointOfContact.name}
+                    onChange={handlePointOfContactChange}
+                    disabled={formData.companyType !== 'Individual'}
+                    data-field="pointOfContactName"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      formData.companyType !== 'Individual' ? 'bg-gray-200 cursor-not-allowed' : 'bg-white'
+                    } ${errors.pointOfContactName ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                    placeholder="Enter contact name"
+                  />
+                  {errors.pointOfContactName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.pointOfContactName}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={pointOfContact.phone}
+                    onChange={handlePointOfContactChange}
+                    disabled={formData.companyType !== 'Individual'}
+                    data-field="pointOfContactPhone"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      formData.companyType !== 'Individual' ? 'bg-gray-200 cursor-not-allowed' : 'bg-white'
+                    } ${errors.pointOfContactPhone ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                    placeholder="Enter contact phone"
+                  />
+                  {errors.pointOfContactPhone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.pointOfContactPhone}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email ID
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={pointOfContact.email}
+                    onChange={handlePointOfContactChange}
+                    disabled={formData.companyType !== 'Individual'}
+                    data-field="pointOfContactEmail"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                      formData.companyType !== 'Individual' ? 'bg-gray-200 cursor-not-allowed' : 'bg-white'
+                    } ${errors.pointOfContactEmail ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                    placeholder="Enter contact email"
+                  />
+                  {errors.pointOfContactEmail && (
+                    <p className="mt-1 text-sm text-red-600">{errors.pointOfContactEmail}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Username and GST Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <User className="inline w-4 h-4 mr-2" />
+                Username
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter username"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <FileText className="inline w-4 h-4 mr-2" />
+                GST Number
+              </label>
+              <input
+                type="text"
+                name="gstNumber"
+                value={formData.gstNumber}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter GST number"
+              />
+            </div>
+          </div>
+
+          {/* DPIIT Register Section */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Award className="inline w-5 h-5 mr-2" />
+              DPIIT Register
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  DPIIT Registered
+                </label>
+                <select
+                  name="dpiitRegister"
+                  value={formData.dpiitRegister}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="">Select option</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+
+              {formData.dpiitRegister === 'Yes' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Calendar className="inline w-4 h-4 mr-2" />
+                      Valid Till
+                    </label>
+                    <input
+                      type="date"
+                      name="validTill"
+                      value={dpiitData.validTill}
+                      onChange={handleDpiitChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Upload className="inline w-4 h-4 mr-2" />
+                      Upload Certificate
+                    </label>
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => handleFileChange('dpiitCertificate', e.target.files?.[0] || null)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                    />
+                    {dpiitData.certificate && (
+                      <p className="mt-1 text-sm text-green-600">
+                        Selected: {dpiitData.certificate.name}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </div>
+
+          {/* File Upload Section */}
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Upload className="inline w-5 h-5 mr-2" />
+              File Upload Section
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* TDS File */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  TDS File
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('tdsFile', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.tdsFile && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.tdsFile.name}</p>
+                )}
+              </div>
+
+              {/* GST File */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  GST File
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('gstFile', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.gstFile && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.gstFile.name}</p>
+                )}
+              </div>
+
+              {/* NDA */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  NDA
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('nda', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.nda && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.nda.name}</p>
+                )}
+              </div>
+
+              {/* Agreement */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Agreement
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('agreement', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.agreement && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.agreement.name}</p>
+                )}
+              </div>
+
+              {/* Quotation */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Quotation
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('quotation', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.quotation && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.quotation.name}</p>
+                )}
+              </div>
+
+              {/* Pan Card */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pan Card
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('panCard', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.panCard && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.panCard.name}</p>
+                )}
+              </div>
+
+              {/* Udhyam Registration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Udhyam Registration
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileChange('udhyamRegistration', e.target.files?.[0] || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.udhyamRegistration && (
+                  <p className="mt-1 text-sm text-green-600">Selected: {files.udhyamRegistration.name}</p>
+                )}
+              </div>
+
+              {/* Others */}
+              <div className="md:col-span-2 lg:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Others (Multiple files allowed)
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => handleMultipleFileChange(e.target.files)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                />
+                {files.others.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-sm text-green-600">Selected {files.others.length} file(s):</p>
+                    <ul className="text-sm text-gray-600 ml-4">
+                      {files.others.map((file, index) => (
+                        <li key={index}>• {file.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

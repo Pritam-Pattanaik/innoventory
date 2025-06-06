@@ -40,19 +40,44 @@ model UserPermission {
 }
 
 model Customer {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  phone       String?
-  company     String?
-  country     String
-  address     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
-  orders      Order[]
+  id                    String   @id @default(cuid())
+  name                  String
+  email                 String   @unique
+  phone                 String?
+  company               String?
+  country               String
+  address               String?
+
+  // New comprehensive fields
+  clientOnboardingDate  DateTime?
+  companyType           String?
+  companyName           String?
+  individualName        String?
+  city                  String?
+  state                 String?
+  username              String?
+  gstNumber             String?
+  dpiitRegister         String?
+  dpiitValidTill        DateTime?
+  pointOfContact        String?  // JSON string of contact information
+
+  // File URLs
+  dpiitCertificateUrl   String?
+  tdsFileUrl            String?
+  gstFileUrl            String?
+  ndaFileUrl            String?
+  agreementFileUrl      String?
+  quotationFileUrl      String?
+  panCardFileUrl        String?
+  udhyamRegistrationUrl String?
+  otherDocsUrls         String[] // Array of document URLs
+
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  createdById           String
+  createdBy             User     @relation(fields: [createdById], references: [id])
+  orders                Order[]
 
   @@map("customers")
 }
