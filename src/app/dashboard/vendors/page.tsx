@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Building2, Plus, Search, Filter, Edit, Trash2, Eye, Star } from 'lucide-react'
+import { Building2, Plus, Search, Edit, Trash2, Eye, Star } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import PageTransition from '@/components/animations/PageTransition'
 import FloatingParticles from '@/components/animations/FloatingParticles'
@@ -35,48 +35,7 @@ export default function VendorsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    // Get user role from localStorage
-    if (typeof window !== 'undefined') {
-      const storedRole = localStorage.getItem('demoRole') as 'ADMIN' | 'SUB_ADMIN'
-      if (storedRole) {
-        setUserRole(storedRole)
-      }
-    }
-
-    // Fetch vendors on page load
-    fetchVendors()
-  }, [])
-
-  // Refetch when search or filter changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchVendors()
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, filterSpecialization])
-
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.company.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSpecialization = !filterSpecialization || vendor.specialization === filterSpecialization
-    return matchesSearch && matchesSpecialization
-  })
-
-  const specializations = [...new Set(vendors.map(v => v.specialization))]
-
-  const userPermissions = userRole === 'ADMIN'
-    ? ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_VENDORS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS', 'MANAGE_PAYMENTS', 'VIEW_REPORTS']
-    : ['MANAGE_CUSTOMERS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS']
-
-  const handleAddVendorSuccess = () => {
-    // Refresh vendors list
-    fetchVendors()
-  }
-
-  const fetchVendors = async () => {
+  const fetchVendors = useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
@@ -110,6 +69,47 @@ export default function VendorsPage() {
     } finally {
       setIsLoading(false)
     }
+  }, [searchTerm, filterSpecialization])
+
+  useEffect(() => {
+    // Get user role from localStorage
+    if (typeof window !== 'undefined') {
+      const storedRole = localStorage.getItem('demoRole') as 'ADMIN' | 'SUB_ADMIN'
+      if (storedRole) {
+        setUserRole(storedRole)
+      }
+    }
+
+    // Fetch vendors on page load
+    fetchVendors()
+  }, [fetchVendors])
+
+  // Refetch when search or filter changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchVendors()
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, filterSpecialization, fetchVendors])
+
+  const filteredVendors = vendors.filter(vendor => {
+    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vendor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         vendor.company.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSpecialization = !filterSpecialization || vendor.specialization === filterSpecialization
+    return matchesSearch && matchesSpecialization
+  })
+
+  const specializations = [...new Set(vendors.map(v => v.specialization))]
+
+  const userPermissions = userRole === 'ADMIN'
+    ? ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_VENDORS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS', 'MANAGE_PAYMENTS', 'VIEW_REPORTS']
+    : ['MANAGE_CUSTOMERS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS']
+
+  const handleAddVendorSuccess = () => {
+    // Refresh vendors list
+    fetchVendors()
   }
 
   const renderStars = (rating: number) => {

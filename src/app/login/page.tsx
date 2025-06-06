@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [isClient, setIsClient] = useState(false)
+  const [, setIsClient] = useState(false)
   const router = useRouter()
 
   useEffect(() => {

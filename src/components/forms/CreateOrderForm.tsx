@@ -45,9 +45,8 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
   })
   const [customers, setCustomers] = useState([])
   const [vendors, setVendors] = useState([])
-  const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<any>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (isOpen) {
@@ -88,12 +87,12 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     setFormData(prev => ({ ...prev, [name]: value }))
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev: any) => ({ ...prev, [name]: '' }))
+      setErrors((prev: Record<string, string>) => ({ ...prev, [name]: '' }))
     }
   }
 
   const validateForm = () => {
-    const newErrors: any = {}
+    const newErrors: Record<string, string> = {}
     
     if (!formData.title.trim()) newErrors.title = 'Title is required'
     if (!formData.type) newErrors.type = 'Order type is required'
@@ -285,9 +284,9 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
                 }`}
               >
                 <option value="">Select customer</option>
-                {customers.map((customer: any) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.name} - {customer.company}
+                {customers.map((customer: Record<string, unknown>) => (
+                  <option key={customer.id as string} value={customer.id as string}>
+                    {customer.name as string} - {customer.company as string}
                   </option>
                 ))}
               </select>
@@ -309,9 +308,9 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
                 }`}
               >
                 <option value="">Select vendor</option>
-                {vendors.map((vendor: any) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.name} - {vendor.specialization}
+                {vendors.map((vendor: Record<string, unknown>) => (
+                  <option key={vendor.id as string} value={vendor.id as string}>
+                    {vendor.name as string} - {vendor.specialization as string}
                   </option>
                 ))}
               </select>

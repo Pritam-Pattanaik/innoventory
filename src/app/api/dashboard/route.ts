@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
         prisma.invoice.findMany({
           where: {
             status: 'PENDING',
-            dueDate: { not: null }
+            dueDate: { not: null as unknown as undefined }
           },
           include: {
             order: {
@@ -283,7 +283,7 @@ export async function GET(request: NextRequest) {
             status: {
               in: ['YET_TO_START', 'IN_PROGRESS', 'PENDING_WITH_CLIENT']
             },
-            dueDate: { not: null }
+            dueDate: { not: null as unknown as undefined }
           },
           orderBy: { dueDate: 'asc' },
           take: 10

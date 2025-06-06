@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+// 
 import anime from 'animejs'
 import dynamic from 'next/dynamic'
 

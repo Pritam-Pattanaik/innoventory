@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Download, Calendar, Filter, BarChart3, PieChart, TrendingUp } from 'lucide-react'
+import { FileText, Download, BarChart3, PieChart, TrendingUp } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import PageTransition from '@/components/animations/PageTransition'
 import FloatingParticles from '@/components/animations/FloatingParticles'

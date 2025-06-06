@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const specialization = searchParams.get('specialization') || ''
 
-    const whereClause: any = {
+    const whereClause: Record<string, string | boolean | Record<string, unknown>[]> = {
       isActive: true
     }
 

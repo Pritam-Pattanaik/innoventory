@@ -29,14 +29,14 @@ const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormPr
     permissions: [] as string[]
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<any>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors((prev: any) => ({ ...prev, [name]: '' }))
+      setErrors(prev => ({ ...prev, [name]: '' }))
     }
   }
 
@@ -48,12 +48,12 @@ const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormPr
     
     // Clear permissions error
     if (errors.permissions) {
-      setErrors((prev: any) => ({ ...prev, permissions: '' }))
+      setErrors(prev => ({ ...prev, permissions: '' }))
     }
   }
 
   const validateForm = () => {
-    const newErrors: any = {}
+    const newErrors: Record<string, string> = {}
     
     if (!formData.name.trim()) newErrors.name = 'Name is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required'

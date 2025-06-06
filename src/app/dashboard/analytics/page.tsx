@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, Users, FileText } from 'lucide-react'
+import { BarChart3, TrendingUp, DollarSign, Users, FileText } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import PageTransition from '@/components/animations/PageTransition'
 import FloatingParticles from '@/components/animations/FloatingParticles'
@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
                 { country: 'United Kingdom', orders: 89, percentage: 22 },
                 { country: 'Germany', orders: 67, percentage: 16 },
                 { country: 'Canada', orders: 45, percentage: 11 }
-              ].map((item, index) => (
+              ].map((item) => (
                 <div key={item.country} className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-900">{item.country}</p>
@@ -240,8 +240,8 @@ export default function AnalyticsPage() {
                 { action: 'Payment received', time: '4 hours ago', type: 'success' },
                 { action: 'Order completed', time: '6 hours ago', type: 'success' },
                 { action: 'Customer registered', time: '8 hours ago', type: 'info' }
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center space-x-3">
+              ].map((activity) => (
+                <div key={activity.action} className="flex items-center space-x-3">
                   <div className={`w-2 h-2 rounded-full ${
                     activity.type === 'success' ? 'bg-green-500' : 'bg-blue-500'
                   }`}></div>

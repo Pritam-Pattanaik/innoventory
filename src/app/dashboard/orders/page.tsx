@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { FileText, Plus, Search, Filter, Edit, Trash2, Eye, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
+import { FileText, Plus, Search, Edit, Trash2, Eye, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import PageTransition from '@/components/animations/PageTransition'
 import FloatingParticles from '@/components/animations/FloatingParticles'
@@ -45,50 +45,7 @@ export default function OrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    // Get user role from localStorage
-    if (typeof window !== 'undefined') {
-      const storedRole = localStorage.getItem('demoRole') as 'ADMIN' | 'SUB_ADMIN'
-      if (storedRole) {
-        setUserRole(storedRole)
-      }
-    }
-
-    // Fetch orders on page load
-    fetchOrders()
-  }, [])
-
-  // Refetch when search or filter changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchOrders()
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, filterStatus, filterType])
-
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = !filterStatus || order.status === filterStatus
-    const matchesType = !filterType || order.type === filterType
-    return matchesSearch && matchesStatus && matchesType
-  })
-
-  const statuses = [...new Set(orders.map(o => o.status))]
-  const types = [...new Set(orders.map(o => o.type))]
-
-  const userPermissions = userRole === 'ADMIN'
-    ? ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_VENDORS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS', 'MANAGE_PAYMENTS', 'VIEW_REPORTS']
-    : ['MANAGE_CUSTOMERS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS']
-
-  const handleCreateOrderSuccess = () => {
-    // Refresh orders list
-    fetchOrders()
-  }
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
@@ -123,6 +80,49 @@ export default function OrdersPage() {
     } finally {
       setIsLoading(false)
     }
+  }, [searchTerm, filterStatus, filterType])
+
+  useEffect(() => {
+    // Get user role from localStorage
+    if (typeof window !== 'undefined') {
+      const storedRole = localStorage.getItem('demoRole') as 'ADMIN' | 'SUB_ADMIN'
+      if (storedRole) {
+        setUserRole(storedRole)
+      }
+    }
+
+    // Fetch orders on page load
+    fetchOrders()
+  }, [fetchOrders])
+
+  // Refetch when search or filter changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchOrders()
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, filterStatus, filterType, fetchOrders])
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.referenceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.customer.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = !filterStatus || order.status === filterStatus
+    const matchesType = !filterType || order.type === filterType
+    return matchesSearch && matchesStatus && matchesType
+  })
+
+  const statuses = [...new Set(orders.map(o => o.status))]
+  const types = [...new Set(orders.map(o => o.type))]
+
+  const userPermissions = userRole === 'ADMIN'
+    ? ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_VENDORS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS', 'MANAGE_PAYMENTS', 'VIEW_REPORTS']
+    : ['MANAGE_CUSTOMERS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS']
+
+  const handleCreateOrderSuccess = () => {
+    // Refresh orders list
+    fetchOrders()
   }
 
   const getStatusIcon = (status: string) => {

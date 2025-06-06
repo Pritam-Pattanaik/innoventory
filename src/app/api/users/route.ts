@@ -38,8 +38,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
       isActive: user.isActive,
       permissions: user.permissions.map(p => p.permission),
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin
+      createdAt: user.createdAt
     }))
 
     return NextResponse.json(formattedUsers)
@@ -109,7 +108,7 @@ export async function POST(request: NextRequest) {
       prisma.userPermission.create({
         data: {
           userId: user.id,
-          permission: permission as any
+          permission: permission as 'MANAGE_CUSTOMERS' | 'MANAGE_VENDORS' | 'MANAGE_ORDERS' | 'VIEW_ANALYTICS' | 'MANAGE_PAYMENTS' | 'VIEW_REPORTS'
         }
       })
     )
@@ -128,6 +127,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Return user without password
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _, ...userWithoutPassword } = user
     return NextResponse.json({
       ...userWithoutPassword,

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Plus, Search, Filter, Edit, Trash2, Eye } from 'lucide-react'
+import { Users, Plus, Search, Edit, Trash2, Eye } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import PageTransition from '@/components/animations/PageTransition'
 import FloatingParticles from '@/components/animations/FloatingParticles'
@@ -33,48 +33,7 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    // Get user role from localStorage
-    if (typeof window !== 'undefined') {
-      const storedRole = localStorage.getItem('demoRole') as 'ADMIN' | 'SUB_ADMIN'
-      if (storedRole) {
-        setUserRole(storedRole)
-      }
-    }
-
-    // Fetch customers on page load
-    fetchCustomers()
-  }, [])
-
-  // Refetch when search or filter changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchCustomers()
-    }, 300) // Debounce search
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, filterCountry])
-
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.company.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCountry = !filterCountry || customer.country === filterCountry
-    return matchesSearch && matchesCountry
-  })
-
-  const countries = [...new Set(customers.map(c => c.country))]
-
-  const userPermissions = userRole === 'ADMIN'
-    ? ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_VENDORS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS', 'MANAGE_PAYMENTS', 'VIEW_REPORTS']
-    : ['MANAGE_CUSTOMERS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS']
-
-  const handleAddCustomerSuccess = () => {
-    // Refresh customers list
-    fetchCustomers()
-  }
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     try {
       setIsLoading(true)
       setError('')
@@ -108,6 +67,47 @@ export default function CustomersPage() {
     } finally {
       setIsLoading(false)
     }
+  }, [searchTerm, filterCountry])
+
+  useEffect(() => {
+    // Get user role from localStorage
+    if (typeof window !== 'undefined') {
+      const storedRole = localStorage.getItem('demoRole') as 'ADMIN' | 'SUB_ADMIN'
+      if (storedRole) {
+        setUserRole(storedRole)
+      }
+    }
+
+    // Fetch customers on page load
+    fetchCustomers()
+  }, [fetchCustomers])
+
+  // Refetch when search or filter changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchCustomers()
+    }, 300) // Debounce search
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, filterCountry, fetchCustomers])
+
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customer.company.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCountry = !filterCountry || customer.country === filterCountry
+    return matchesSearch && matchesCountry
+  })
+
+  const countries = [...new Set(customers.map(c => c.country))]
+
+  const userPermissions = userRole === 'ADMIN'
+    ? ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_VENDORS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS', 'MANAGE_PAYMENTS', 'VIEW_REPORTS']
+    : ['MANAGE_CUSTOMERS', 'MANAGE_ORDERS', 'VIEW_ANALYTICS']
+
+  const handleAddCustomerSuccess = () => {
+    // Refresh customers list
+    fetchCustomers()
   }
 
   return (

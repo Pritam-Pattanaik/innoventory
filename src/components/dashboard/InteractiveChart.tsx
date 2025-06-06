@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+// 
 import anime from 'animejs'
 import {
   Chart as ChartJS,
@@ -55,7 +55,7 @@ const InteractiveChart = ({
   onSegmentClick,
   height = 300
 }: InteractiveChartProps) => {
-  const chartRef = useRef<any>(null)
+  const chartRef = useRef(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -71,7 +71,7 @@ const InteractiveChart = ({
         text: title,
         font: {
           size: 16,
-          weight: 'bold'
+          weight: 'bold' as const
         }
       },
       tooltip: {
@@ -83,10 +83,12 @@ const InteractiveChart = ({
         cornerRadius: 8,
         displayColors: true,
         callbacks: {
-          label: function(context: any) {
-            const label = context.dataset.label || ''
-            const value = context.parsed.y || context.parsed
-            return `${label}: ${value.toLocaleString()}`
+          label: function(context: unknown) {
+            const dataset = (context as Record<string, unknown>).dataset as Record<string, unknown>
+            const parsed = (context as Record<string, unknown>).parsed as Record<string, unknown>
+            const label = dataset?.label || ''
+            const value = parsed?.y || parsed
+            return `${label}: ${typeof value === 'number' ? value.toLocaleString() : value}`
           }
         }
       }
@@ -104,19 +106,22 @@ const InteractiveChart = ({
         }
       }
     } : {},
-    onClick: (event: any, elements: any[]) => {
+    onClick: (event: unknown, elements: unknown[]) => {
       if (elements.length > 0 && onSegmentClick) {
-        const elementIndex = elements[0].index
-        const segmentLabel = data.labels[elementIndex]
+        const elementIndex = (elements[0] as Record<string, unknown>).index as number
+        const segmentLabel = (data.labels as string[])[elementIndex]
         onSegmentClick(elementIndex, segmentLabel)
       }
     },
-    onHover: (event: any, elements: any[]) => {
-      event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default'
+    onHover: (event: unknown, elements: unknown[]) => {
+      const nativeEvent = (event as Record<string, unknown>).native as Record<string, unknown>
+      if (nativeEvent && nativeEvent.target) {
+        (nativeEvent.target as HTMLElement).style.cursor = elements.length > 0 ? 'pointer' : 'default'
+      }
     },
     animation: {
       duration: 2000,
-      easing: 'easeInOutQuart',
+      easing: 'easeInOutQuart' as const,
       onComplete: () => {
         // Add a subtle pulse animation after chart loads
         if (containerRef.current) {

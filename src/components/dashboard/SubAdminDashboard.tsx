@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React from 'react'
 import { motion } from 'framer-motion'
 import { Users, Building2, FileText, Clock, Activity, CheckCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -11,6 +11,21 @@ import PendingWorkWidget from './PendingWorkWidget'
 import PageTransition from '../animations/PageTransition'
 import FloatingParticles from '../animations/FloatingParticles'
 
+interface PendingWorkItem {
+  id: string
+  referenceNumber: string
+  title: string
+  daysLeft: number
+  status: string
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+}
+
+interface ActivityItem {
+  id: string
+  description: string
+  createdAt: string
+}
+
 interface SubAdminDashboardProps {
   dashboardData: {
     assignedCustomers: number
@@ -19,8 +34,8 @@ interface SubAdminDashboardProps {
     ordersYetToStart: number
     ordersPendingWithClient: number
     ordersCompleted: number
-    assignedPendingOrders: any[]
-    recentActivities: any[]
+    assignedPendingOrders: PendingWorkItem[]
+    recentActivities: ActivityItem[]
     monthlyProgress: { month: string; completed: number; pending: number }[]
   }
   userInfo: {
@@ -136,7 +151,7 @@ const SubAdminDashboard = ({ dashboardData, userInfo }: SubAdminDashboardProps) 
       >
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome back, {userInfo.name}!</h1>
-          <p className="text-gray-600 mt-1">Here's your personalized dashboard overview</p>
+          <p className="text-gray-600 mt-1">Here&apos;s your personalized dashboard overview</p>
         </div>
         
         <div className="text-right">

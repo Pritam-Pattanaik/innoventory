@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || ''
     const type = searchParams.get('type') || ''
 
-    const whereClause: any = {}
+    const whereClause: Record<string, string | Record<string, unknown>[]> = {}
 
     if (search) {
       whereClause.OR = [
@@ -105,13 +105,13 @@ export async function POST(request: NextRequest) {
         referenceNumber,
         title,
         description: description || null,
-        type: type as any,
+        type: type as 'PATENT' | 'TRADEMARK' | 'COPYRIGHT' | 'DESIGN',
         status: 'YET_TO_START',
         customerId,
         vendorId,
         assignedToId: assignedToId || payload.userId,
         country,
-        priority: priority as any,
+        priority: priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
         amount: parseFloat(amount),
         paidAmount: 0,
         dueDate: dueDate ? new Date(dueDate) : null,

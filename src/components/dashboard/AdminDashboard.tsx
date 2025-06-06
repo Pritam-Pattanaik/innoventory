@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Building2, FileCheck, FileX, TrendingUp, Globe } from 'lucide-react'
+import { Users, Building2, FileCheck, FileX } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import KPICard from './KPICard'
@@ -13,6 +13,26 @@ import PendingPaymentsWidget from './PendingPaymentsWidget'
 import PageTransition from '../animations/PageTransition'
 import FloatingParticles from '../animations/FloatingParticles'
 
+interface PendingWorkItem {
+  id: string
+  referenceNumber: string
+  title: string
+  daysLeft: number
+  status: string
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+}
+
+interface PendingPaymentItem {
+  id: string
+  invoiceNumber: string
+  orderReferenceNumber: string
+  imageUrl?: string
+  daysLeft: number
+  amount: number
+  currency: string
+  customerName: string
+}
+
 interface AdminDashboardProps {
   dashboardData: {
     totalCustomers: number
@@ -22,8 +42,8 @@ interface AdminDashboardProps {
     customersByCountry: { country: string; count: number; coordinates: [number, number] }[]
     vendorsByCountry: { country: string; count: number; coordinates: [number, number] }[]
     workDistribution: { country: string; workCount: number; coordinates: [number, number] }[]
-    pendingWork: any[]
-    pendingPayments: any[]
+    pendingWork: PendingWorkItem[]
+    pendingPayments: PendingPaymentItem[]
     yearlyTrends: { year: string; customers: number; vendors: number; ips: number }[]
   }
 }

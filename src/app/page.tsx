@@ -7,7 +7,7 @@ import { BarChart3, Users, Building2, FileText, ArrowRight } from 'lucide-react'
 
 export default function Home() {
   const router = useRouter()
-  const [isClient, setIsClient] = useState(false)
+  const [, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)

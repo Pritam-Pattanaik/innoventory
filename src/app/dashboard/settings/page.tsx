@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Settings, Users, Plus, Edit, Trash2, Shield, Key, UserCheck, UserX } from 'lucide-react'
+import { Settings, Users, Plus, Edit, Trash2, Shield, UserCheck, UserX } from 'lucide-react'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import PageTransition from '@/components/animations/PageTransition'
 import FloatingParticles from '@/components/animations/FloatingParticles'
@@ -35,7 +35,7 @@ export default function SettingsPage() {
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedSubAdmin, setSelectedSubAdmin] = useState<any>(null)
+  const [selectedSubAdmin, setSelectedSubAdmin] = useState<SubAdmin | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -95,7 +95,7 @@ export default function SettingsPage() {
     }
   }
 
-  const handleEditSubAdmin = (subAdmin: any) => {
+  const handleEditSubAdmin = (subAdmin: SubAdmin) => {
     setSelectedSubAdmin(subAdmin)
     setShowEditModal(true)
   }
@@ -125,7 +125,7 @@ export default function SettingsPage() {
   const togglePermission = (permission: string) => {
     if (selectedSubAdmin) {
       const updatedPermissions = selectedSubAdmin.permissions.includes(permission)
-        ? selectedSubAdmin.permissions.filter((p: string) => p !== permission)
+        ? selectedSubAdmin.permissions.filter(p => p !== permission)
         : [...selectedSubAdmin.permissions, permission]
       setSelectedSubAdmin({ ...selectedSubAdmin, permissions: updatedPermissions })
     }
@@ -139,7 +139,7 @@ export default function SettingsPage() {
           <div className="text-center py-12">
             <Shield className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-            <p className="text-gray-600">You don't have permission to access this page.</p>
+            <p className="text-gray-600">You don&apos;t have permission to access this page.</p>
           </div>
         </PageTransition>
       </DashboardLayout>

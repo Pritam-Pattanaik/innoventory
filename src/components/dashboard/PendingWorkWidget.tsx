@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+// 
 import anime from 'animejs'
 import { Clock, AlertTriangle, FileText, ExternalLink } from 'lucide-react'
 
@@ -121,7 +121,7 @@ const PendingWorkWidget = ({
             <p>No pending work items</p>
           </div>
         ) : (
-          data.map((item, index) => (
+          data.map((item) => (
             <div
               key={item.id}
               className="pending-item border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer opacity-0 transform"
