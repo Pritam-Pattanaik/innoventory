@@ -17,6 +17,24 @@ model User {
   createdById  String?
   name         String
   role         UserRole         @default(SUB_ADMIN)
+
+  // New comprehensive sub-admin fields
+  subAdminOnboardingDate DateTime?
+  address                String?
+  city                   String?
+  state                  String?
+  country                String?
+  username               String?
+  panNumber              String?
+  termOfWork             String?
+
+  // File URLs for sub-admin documents
+  tdsFileUrl             String?
+  ndaFileUrl             String?
+  employmentAgreementUrl String?
+  panCardFileUrl         String?
+  otherDocsUrls          String[] // Array of document URLs
+
   activities   ActivityLog[]
   customers    Customer[]
   orders       Order[]

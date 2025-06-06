@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
     const payload = verifyToken(token)
-    
+
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
@@ -67,13 +67,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { name, email, password, permissions } = body
+    // Parse FormData
+    const formData = await request.formData()
+    console.log('Received form data keys:', Array.from(formData.keys()))
+
+    // Extract form fields
+    const subAdminOnboardingDate = formData.get('subAdminOnboardingDate') as string
+    const name = formData.get('name') as string
+    const email = formData.get('email') as string
+    const address = formData.get('address') as string
+    const city = formData.get('city') as string
+    const state = formData.get('state') as string
+    const country = formData.get('country') as string
+    const username = formData.get('username') as string
+    const panNumber = formData.get('panNumber') as string
+    const termOfWork = formData.get('termOfWork') as string
+    const password = formData.get('password') as string
+    const permissionsStr = formData.get('permissions') as string
+
+    // Parse JSON fields
+    let permissions: string[] = []
+
+    try {
+      if (permissionsStr) {
+        permissions = JSON.parse(permissionsStr)
+      }
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      return NextResponse.json({ error: 'Invalid JSON data' }, { status: 400 })
+    }
 
     // Validate required fields
     if (!name || !email || !password || !permissions || permissions.length === 0) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: name, email, password, permissions' 
+      return NextResponse.json({
+        error: 'Missing required fields: name, email, password, permissions'
+      }, { status: 400 })
+    }
+
+    if (!country || !username) {
+      return NextResponse.json({
+        error: 'Missing required fields: country, username'
       }, { status: 400 })
     }
 
@@ -88,18 +121,50 @@ export async function POST(request: NextRequest) {
       }, { status: 409 })
     }
 
+    // Handle file uploads (placeholder URLs for now)
+    const tdsFileUrl = formData.get('tdsFile') ? 'placeholder-tds-file-url' : null
+    const ndaFileUrl = formData.get('nda') ? 'placeholder-nda-file-url' : null
+    const employmentAgreementUrl = formData.get('employmentAgreement') ? 'placeholder-employment-agreement-url' : null
+    const panCardFileUrl = formData.get('panCard') ? 'placeholder-pan-card-file-url' : null
+
     // Hash password
     const hashedPassword = await hashPassword(password)
 
-    // Create user
+    console.log('Creating sub-admin with data:', {
+      name,
+      email,
+      username,
+      country,
+      termOfWork
+    })
+
+    // Create user with all comprehensive fields
     const user = await prisma.user.create({
       data: {
+        // Original fields
         name,
         email,
         password: hashedPassword,
         role: 'SUB_ADMIN',
         isActive: true,
-        createdById: payload.userId
+        createdById: payload.userId,
+
+        // New comprehensive fields
+        subAdminOnboardingDate: subAdminOnboardingDate && subAdminOnboardingDate.trim() ? new Date(subAdminOnboardingDate) : null,
+        address: address || null,
+        city: city || null,
+        state: state || null,
+        country: country || null,
+        username: username || null,
+        panNumber: panNumber || null,
+        termOfWork: termOfWork || null,
+
+        // File URLs
+        tdsFileUrl,
+        ndaFileUrl,
+        employmentAgreementUrl,
+        panCardFileUrl,
+        otherDocsUrls: [] // Placeholder for other documents
       }
     })
 
@@ -136,6 +201,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Create user error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

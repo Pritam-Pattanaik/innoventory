@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, User, Mail, Key, Shield } from 'lucide-react'
+import { X, User, Mail, Key, Shield, Calendar, MapPin, Globe, FileText, Upload, Briefcase } from 'lucide-react'
 import anime from 'animejs'
 
 interface CreateSubAdminFormProps {
@@ -20,23 +20,77 @@ const availablePermissions = [
   { key: 'VIEW_REPORTS', label: 'View Reports', description: 'Generate and view reports' }
 ]
 
+const termOfWorkOptions = [
+  'Part-time',
+  'Full-time',
+  'Contract',
+  'Internship'
+]
+
+const countries = [
+  'United States', 'United Kingdom', 'Germany', 'Canada', 'Australia',
+  'France', 'Italy', 'Spain', 'Netherlands', 'Japan', 'India', 'Brazil'
+]
+
+const cities = [
+  'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia',
+  'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
+  'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata',
+  'London', 'Manchester', 'Birmingham', 'Leeds', 'Glasgow', 'Liverpool'
+]
+
+const states = [
+  'California', 'Texas', 'Florida', 'New York', 'Pennsylvania', 'Illinois',
+  'Ohio', 'Georgia', 'North Carolina', 'Michigan', 'New Jersey', 'Virginia',
+  'Maharashtra', 'Karnataka', 'Tamil Nadu', 'Telangana', 'Gujarat', 'Rajasthan',
+  'England', 'Scotland', 'Wales', 'Northern Ireland'
+]
+
 const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormProps) => {
   const [formData, setFormData] = useState({
+    subAdminOnboardingDate: '',
     name: '',
     email: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    username: '',
+    panNumber: '',
+    termOfWork: '',
     password: '',
     confirmPassword: '',
     permissions: [] as string[]
   })
+
+  const [files, setFiles] = useState({
+    tdsFile: null as File | null,
+    nda: null as File | null,
+    employmentAgreement: null as File | null,
+    panCard: null as File | null,
+    others: [] as File[]
+  })
+
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const handleFileChange = (field: string, file: File | null) => {
+    setFiles(prev => ({ ...prev, [field]: file }))
+  }
+
+  const handleMultipleFileChange = (files: FileList | null) => {
+    if (files) {
+      const fileArray = Array.from(files)
+      setFiles(prev => ({ ...prev, others: fileArray }))
     }
   }
 
@@ -54,10 +108,12 @@ const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormPr
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    
+
     if (!formData.name.trim()) newErrors.name = 'Name is required'
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid'
+    if (!formData.country) newErrors.country = 'Country is required'
+    if (!formData.username.trim()) newErrors.username = 'Username is required'
     if (!formData.password) newErrors.password = 'Password is required'
     else if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters'
     if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm password'
@@ -95,18 +151,38 @@ const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormPr
 
     try {
       const token = localStorage.getItem('token')
+
+      // Create FormData for file uploads
+      const submitData = new FormData()
+
+      // Add form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          submitData.append(key, JSON.stringify(value))
+        } else {
+          submitData.append(key, value as string)
+        }
+      })
+
+      // Add files
+      Object.entries(files).forEach(([key, value]) => {
+        if (value) {
+          if (Array.isArray(value)) {
+            value.forEach((file, index) => {
+              submitData.append(`${key}[${index}]`, file)
+            })
+          } else {
+            submitData.append(key, value)
+          }
+        }
+      })
+
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          permissions: formData.permissions
-        })
+        body: submitData
       })
 
       const data = await response.json()
@@ -125,11 +201,27 @@ const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormPr
 
       // Reset form
       setFormData({
+        subAdminOnboardingDate: '',
         name: '',
         email: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        username: '',
+        panNumber: '',
+        termOfWork: '',
         password: '',
         confirmPassword: '',
         permissions: []
+      })
+
+      setFiles({
+        tdsFile: null,
+        nda: null,
+        employmentAgreement: null,
+        panCard: null,
+        others: []
       })
 
       onSuccess()
@@ -175,81 +267,340 @@ const CreateSubAdminForm = ({ isOpen, onClose, onSuccess }: CreateSubAdminFormPr
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Name */}
+          <div className="space-y-6">
+            {/* Sub-Admin Onboarding Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <User className="inline h-4 w-4 mr-1" />
-                Full Name *
+                <Calendar className="inline w-4 h-4 mr-2" />
+                Sub-Admin Onboarding Date
               </label>
               <input
-                type="text"
-                name="name"
-                value={formData.name}
+                type="date"
+                name="subAdminOnboardingDate"
+                value={formData.subAdminOnboardingDate}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                  errors.subAdminOnboardingDate ? 'border-red-500 bg-red-50' : 'border-gray-300'
                 }`}
-                placeholder="Enter full name"
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              {errors.subAdminOnboardingDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.subAdminOnboardingDate}</p>
+              )}
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Mail className="inline h-4 w-4 mr-1" />
-                Email Address *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter email address"
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="inline h-4 w-4 mr-1" />
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter full name"
+                />
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Mail className="inline h-4 w-4 mr-1" />
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter email address"
+                />
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              </div>
             </div>
 
-            {/* Password */}
+            {/* Address */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Key className="inline h-4 w-4 mr-1" />
-                Password *
+                <MapPin className="inline w-4 h-4 mr-2" />
+                Address
               </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
+              <textarea
+                name="address"
+                value={formData.address}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter password"
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                placeholder="Enter address"
               />
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
             </div>
 
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Key className="inline h-4 w-4 mr-1" />
-                Confirm Password *
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Confirm password"
-              />
-              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+            {/* City, State, Country */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="inline w-4 h-4 mr-2" />
+                  City
+                </label>
+                <select
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="">Select city</option>
+                  {cities.map(city => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="inline w-4 h-4 mr-2" />
+                  State
+                </label>
+                <select
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="">Select state</option>
+                  {states.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Globe className="inline w-4 h-4 mr-2" />
+                  Country *
+                </label>
+                <select
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.country ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select country</option>
+                  {countries.map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+                {errors.country && (
+                  <p className="mt-1 text-sm text-red-600">{errors.country}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Username, PAN Number, Term of Work */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <User className="inline w-4 h-4 mr-2" />
+                  Username *
+                </label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.username ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter username"
+                />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileText className="inline w-4 h-4 mr-2" />
+                  PAN Number
+                </label>
+                <input
+                  type="text"
+                  name="panNumber"
+                  value={formData.panNumber}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter PAN number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Briefcase className="inline w-4 h-4 mr-2" />
+                  Term of Work
+                </label>
+                <select
+                  name="termOfWork"
+                  value={formData.termOfWork}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                >
+                  <option value="">Select term of work</option>
+                  {termOfWorkOptions.map(term => (
+                    <option key={term} value={term}>{term}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Password Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Key className="inline h-4 w-4 mr-1" />
+                  Password *
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter password"
+                />
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Key className="inline h-4 w-4 mr-1" />
+                  Confirm Password *
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${
+                    errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Confirm password"
+                />
+                {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+              </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <Upload className="inline w-5 h-5 mr-2" />
+                File Upload Section
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* TDS File */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    TDS File
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleFileChange('tdsFile', e.target.files?.[0] || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                  {files.tdsFile && (
+                    <p className="mt-1 text-sm text-green-600">Selected: {files.tdsFile.name}</p>
+                  )}
+                </div>
+
+                {/* NDA */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    NDA
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleFileChange('nda', e.target.files?.[0] || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                  {files.nda && (
+                    <p className="mt-1 text-sm text-green-600">Selected: {files.nda.name}</p>
+                  )}
+                </div>
+
+                {/* Employment Agreement */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Employment Agreement
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleFileChange('employmentAgreement', e.target.files?.[0] || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                  {files.employmentAgreement && (
+                    <p className="mt-1 text-sm text-green-600">Selected: {files.employmentAgreement.name}</p>
+                  )}
+                </div>
+
+                {/* Pan Card */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pan Card
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleFileChange('panCard', e.target.files?.[0] || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                  {files.panCard && (
+                    <p className="mt-1 text-sm text-green-600">Selected: {files.panCard.name}</p>
+                  )}
+                </div>
+
+                {/* Others */}
+                <div className="md:col-span-2 lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Others (Multiple files allowed)
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => handleMultipleFileChange(e.target.files)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  />
+                  {files.others.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-sm text-green-600">Selected {files.others.length} file(s):</p>
+                      <ul className="text-sm text-gray-600 ml-4">
+                        {files.others.map((file, index) => (
+                          <li key={index}>• {file.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
