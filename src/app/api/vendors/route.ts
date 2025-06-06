@@ -79,32 +79,21 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
 
     // Extract form fields
-    const onboardingDate = formData.get('onboardingDate') as string
     const companyType = formData.get('companyType') as string
     const companyName = formData.get('companyName') as string
     const individualName = formData.get('individualName') as string
     const email = formData.get('email') as string
     const phone = formData.get('phone') as string
     const address = formData.get('address') as string
-    const city = formData.get('city') as string
-    const state = formData.get('state') as string
     const country = formData.get('country') as string
-    const username = formData.get('username') as string
-    const gstNumber = formData.get('gstNumber') as string
-    const startupBenefits = formData.get('startupBenefits') as string
     const typeOfWorkStr = formData.get('typeOfWork') as string
-    const pointsOfContactStr = formData.get('pointsOfContact') as string
 
     // Parse JSON fields
     let typeOfWork: string[] = []
-    let pointsOfContact = null
 
     try {
       if (typeOfWorkStr) {
         typeOfWork = JSON.parse(typeOfWorkStr)
-      }
-      if (pointsOfContactStr) {
-        pointsOfContact = JSON.parse(pointsOfContactStr)
       }
     } catch (parseError) {
       console.error('JSON parse error:', parseError)
@@ -142,43 +131,25 @@ export async function POST(request: NextRequest) {
       }, { status: 409 })
     }
 
-    // For now, we'll store file handling as placeholders
-    // In a real implementation, you'd upload files to cloud storage
-    const gstFileUrl = formData.get('gstFile') ? 'placeholder-gst-file-url' : null
-    const ndaFileUrl = formData.get('nda') ? 'placeholder-nda-file-url' : null
-    const agreementFileUrl = formData.get('agreement') ? 'placeholder-agreement-file-url' : null
-    const companyLogoUrl = formData.get('companyLogo') ? 'placeholder-logo-file-url' : null
+    // Create vendor - using current database schema
+    const vendorName = companyType === 'Individual' ? individualName : companyName
+    const specialization = typeOfWork.length > 0 ? typeOfWork.join(', ') : 'General'
 
-    // Create vendor
     const vendor = await prisma.vendor.create({
       data: {
-        onboardingDate: onboardingDate ? new Date(onboardingDate) : null,
-        companyType: companyType || null,
-        companyName: companyName || null,
-        individualName: individualName || null,
+        name: vendorName || 'Unknown',
         email,
         phone: phone || null,
-        address: address || null,
-        city: city || null,
-        state: state || null,
+        company: companyName || individualName || 'Unknown',
         country,
-        username: username || null,
-        gstNumber: gstNumber || null,
-        startupBenefits: startupBenefits || null,
-        typeOfWork,
-        pointsOfContact: pointsOfContact ? JSON.stringify(pointsOfContact) : null,
-        gstFileUrl,
-        ndaFileUrl,
-        agreementFileUrl,
-        companyLogoUrl,
-        otherDocsUrls: [], // Placeholder for other documents
+        address: address || null,
+        specialization,
         createdById: payload.userId,
         isActive: true
       }
     })
 
     // Log activity
-    const vendorName = companyType === 'Individual' ? individualName : companyName
     await prisma.activityLog.create({
       data: {
         action: 'VENDOR_CREATED',
