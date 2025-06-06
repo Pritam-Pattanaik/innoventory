@@ -26,17 +26,14 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       whereClause.OR = [
-        { companyName: { contains: search, mode: 'insensitive' } },
-        { individualName: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
-        { username: { contains: search, mode: 'insensitive' } }
+        { company: { contains: search, mode: 'insensitive' } }
       ]
     }
 
     if (specialization) {
-      whereClause.typeOfWork = {
-        has: specialization
-      }
+      whereClause.specialization = { contains: specialization, mode: 'insensitive' }
     }
 
     const vendors = await prisma.vendor.findMany({
