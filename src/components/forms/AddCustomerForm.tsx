@@ -411,7 +411,7 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Mail className="inline w-4 h-4 mr-2" />
-                  Company's Email ID *
+                  Company&apos;s Email ID *
                 </label>
                 <input
                   type="email"
@@ -431,7 +431,7 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <Phone className="inline w-4 h-4 mr-2" />
-                  Company's Number
+                  Company&apos;s Number
                 </label>
                 <input
                   type="tel"
@@ -448,7 +448,7 @@ const AddCustomerForm = ({ isOpen, onClose, onSuccess }: AddCustomerFormProps) =
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <MapPin className="inline w-4 h-4 mr-2" />
-                Company's Address
+                Company&apos;s Address
               </label>
               <textarea
                 name="address"
