@@ -26,14 +26,17 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
+        { companyName: { contains: search, mode: 'insensitive' } },
+        { individualName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
-        { company: { contains: search, mode: 'insensitive' } }
+        { username: { contains: search, mode: 'insensitive' } }
       ]
     }
 
     if (specialization) {
-      whereClause.specialization = specialization
+      whereClause.typeOfWork = {
+        has: specialization
+      }
     }
 
     const vendors = await prisma.vendor.findMany({
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7)
     const payload = verifyToken(token)
-    
+
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
@@ -72,13 +75,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { name, email, phone, company, country, address, specialization } = body
+    // Parse FormData
+    const formData = await request.formData()
+
+    // Extract form fields
+    const onboardingDate = formData.get('onboardingDate') as string
+    const companyType = formData.get('companyType') as string
+    const companyName = formData.get('companyName') as string
+    const individualName = formData.get('individualName') as string
+    const email = formData.get('email') as string
+    const phone = formData.get('phone') as string
+    const address = formData.get('address') as string
+    const city = formData.get('city') as string
+    const state = formData.get('state') as string
+    const country = formData.get('country') as string
+    const username = formData.get('username') as string
+    const gstNumber = formData.get('gstNumber') as string
+    const startupBenefits = formData.get('startupBenefits') as string
+    const typeOfWorkStr = formData.get('typeOfWork') as string
+    const pointsOfContactStr = formData.get('pointsOfContact') as string
+
+    // Parse JSON fields
+    let typeOfWork: string[] = []
+    let pointsOfContact = null
+
+    try {
+      if (typeOfWorkStr) {
+        typeOfWork = JSON.parse(typeOfWorkStr)
+      }
+      if (pointsOfContactStr) {
+        pointsOfContact = JSON.parse(pointsOfContactStr)
+      }
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      return NextResponse.json({ error: 'Invalid JSON data' }, { status: 400 })
+    }
 
     // Validate required fields
-    if (!name || !email || !company || !country || !specialization) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: name, email, company, country, specialization' 
+    if (!email || !country) {
+      return NextResponse.json({
+        error: 'Missing required fields: email, country'
+      }, { status: 400 })
+    }
+
+    // Validate company type specific fields
+    if (companyType === 'Individual' && !individualName) {
+      return NextResponse.json({
+        error: 'Individual name is required for Individual company type'
+      }, { status: 400 })
+    }
+
+    if (companyType !== 'Individual' && !companyName) {
+      return NextResponse.json({
+        error: 'Company name is required for non-Individual company types'
       }, { status: 400 })
     }
 
@@ -88,31 +137,52 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingVendor) {
-      return NextResponse.json({ 
-        error: 'Vendor with this email already exists' 
+      return NextResponse.json({
+        error: 'Vendor with this email already exists'
       }, { status: 409 })
     }
+
+    // For now, we'll store file handling as placeholders
+    // In a real implementation, you'd upload files to cloud storage
+    const gstFileUrl = formData.get('gstFile') ? 'placeholder-gst-file-url' : null
+    const ndaFileUrl = formData.get('nda') ? 'placeholder-nda-file-url' : null
+    const agreementFileUrl = formData.get('agreement') ? 'placeholder-agreement-file-url' : null
+    const companyLogoUrl = formData.get('companyLogo') ? 'placeholder-logo-file-url' : null
 
     // Create vendor
     const vendor = await prisma.vendor.create({
       data: {
-        name,
+        onboardingDate: onboardingDate ? new Date(onboardingDate) : null,
+        companyType: companyType || null,
+        companyName: companyName || null,
+        individualName: individualName || null,
         email,
         phone: phone || null,
-        company,
-        country,
         address: address || null,
-        specialization,
+        city: city || null,
+        state: state || null,
+        country,
+        username: username || null,
+        gstNumber: gstNumber || null,
+        startupBenefits: startupBenefits || null,
+        typeOfWork,
+        pointsOfContact: pointsOfContact ? JSON.stringify(pointsOfContact) : null,
+        gstFileUrl,
+        ndaFileUrl,
+        agreementFileUrl,
+        companyLogoUrl,
+        otherDocsUrls: [], // Placeholder for other documents
         createdById: payload.userId,
         isActive: true
       }
     })
 
     // Log activity
+    const vendorName = companyType === 'Individual' ? individualName : companyName
     await prisma.activityLog.create({
       data: {
         action: 'VENDOR_CREATED',
-        description: `Created new vendor: ${name}`,
+        description: `Created new vendor: ${vendorName}`,
         entityType: 'Vendor',
         entityId: vendor.id,
         userId: payload.userId
@@ -122,6 +192,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(vendor, { status: 201 })
   } catch (error) {
     console.error('Create vendor error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }

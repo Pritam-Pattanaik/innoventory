@@ -249,7 +249,9 @@ const AddVendorForm = ({ isOpen, onClose, onSuccess }: AddVendorFormProps) => {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create vendor')
+        const errorMessage = data.error || `Failed to create vendor (${response.status})`
+        const details = data.details ? ` - ${data.details}` : ''
+        throw new Error(errorMessage + details)
       }
 
       // Success animation
