@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, FileText, User, Building2, Globe, DollarSign, Calendar, AlertTriangle, CheckCircle, Circle } from 'lucide-react'
+import { X, FileText, User, Building2, Globe, DollarSign, Calendar, AlertTriangle, CheckCircle, Circle, Upload, Hash } from 'lucide-react'
 import anime from 'animejs'
 
 interface CreateOrderFormProps {
@@ -20,6 +20,16 @@ interface CustomerFormData {
   customerCompany: string
   customerPhone: string
   customerAddress: string
+  orderOnboardingDate: string
+  orderReferenceNumber: string
+  orderFriendlyImage: File | null
+  typeOfWork: string
+  workCompletionDate: string
+  documentsProvided: File | null
+  invoiceForCustomer: File | null
+  totalInvoiceValue: string
+  totalGstGovtFees: string
+  paymentExpectedDate: string
 }
 
 interface VendorFormData {
@@ -48,6 +58,17 @@ const orderTypes = [
   { value: 'DESIGN', label: 'Design' }
 ]
 
+const workTypes = [
+  { value: 'PATENTS', label: 'Patents' },
+  { value: 'TRADEMARKS', label: 'Trademarks' },
+  { value: 'COPYRIGHTS', label: 'Copyrights' },
+  { value: 'DESIGNS', label: 'Designs' },
+  { value: 'CONSULTANCY', label: 'Consultancy' },
+  { value: 'AUDIT_SERVICE', label: 'Audit Service' },
+  { value: 'AGREEMENT_DRAFTING', label: 'Agreement drafting' },
+  { value: 'OTHERS', label: 'Others' }
+]
+
 const priorities = [
   { value: 'LOW', label: 'Low', color: 'text-green-600' },
   { value: 'MEDIUM', label: 'Medium', color: 'text-yellow-600' },
@@ -70,7 +91,17 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     customerEmail: '',
     customerCompany: '',
     customerPhone: '',
-    customerAddress: ''
+    customerAddress: '',
+    orderOnboardingDate: '',
+    orderReferenceNumber: '',
+    orderFriendlyImage: null,
+    typeOfWork: '',
+    workCompletionDate: '',
+    documentsProvided: null,
+    invoiceForCustomer: null,
+    totalInvoiceValue: '',
+    totalGstGovtFees: '',
+    paymentExpectedDate: ''
   })
 
   const [vendorData, setVendorData] = useState<VendorFormData>({
@@ -100,8 +131,16 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
   useEffect(() => {
     if (isOpen) {
       fetchData()
+      generateOrderReference()
     }
   }, [isOpen])
+
+  const generateOrderReference = () => {
+    const timestamp = Date.now().toString().slice(-6)
+    const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    const referenceNumber = `IS-${timestamp}${randomNum}`
+    setCustomerData(prev => ({ ...prev, orderReferenceNumber: referenceNumber }))
+  }
 
   const fetchData = async () => {
     try {
@@ -140,6 +179,15 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     }
   }
 
+  const handleCustomerFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0] || null
+    setCustomerData(prev => ({ ...prev, [fieldName]: file }))
+    // Clear error when file is selected
+    if (errors[fieldName]) {
+      setErrors(prev => ({ ...prev, [fieldName]: '' }))
+    }
+  }
+
   const handleVendorChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setVendorData(prev => ({ ...prev, [name]: value }))
@@ -163,23 +211,25 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     const selectedCustomer = customers.find((c: any) => c.id === customerId)
 
     if (selectedCustomer) {
-      setCustomerData({
+      setCustomerData(prev => ({
+        ...prev,
         customerId,
         customerName: selectedCustomer.name || '',
         customerEmail: selectedCustomer.email || '',
         customerCompany: selectedCustomer.company || '',
         customerPhone: selectedCustomer.phone || '',
         customerAddress: selectedCustomer.address || ''
-      })
+      }))
     } else {
-      setCustomerData({
+      setCustomerData(prev => ({
+        ...prev,
         customerId: '',
         customerName: '',
         customerEmail: '',
         customerCompany: '',
         customerPhone: '',
         customerAddress: ''
-      })
+      }))
     }
   }
 
@@ -214,6 +264,14 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     if (!customerData.customerId) newErrors.customerId = 'Customer selection is required'
     if (!customerData.customerName.trim()) newErrors.customerName = 'Customer name is required'
     if (!customerData.customerEmail.trim()) newErrors.customerEmail = 'Customer email is required'
+    if (!customerData.orderOnboardingDate) newErrors.orderOnboardingDate = 'Order onboarding date is required'
+    if (!customerData.orderFriendlyImage) newErrors.orderFriendlyImage = 'Order friendly image is required'
+    if (!customerData.typeOfWork) newErrors.typeOfWork = 'Type of work is required'
+    if (!customerData.workCompletionDate) newErrors.workCompletionDate = 'Work completion date is required'
+    if (!customerData.documentsProvided) newErrors.documentsProvided = 'Documents provided are required'
+    if (!customerData.invoiceForCustomer) newErrors.invoiceForCustomer = 'Invoice for customer is required'
+    if (!customerData.totalInvoiceValue.trim()) newErrors.totalInvoiceValue = 'Total invoice value is required'
+    if (!customerData.paymentExpectedDate) newErrors.paymentExpectedDate = 'Payment expected date is required'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -344,7 +402,17 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
         customerEmail: '',
         customerCompany: '',
         customerPhone: '',
-        customerAddress: ''
+        customerAddress: '',
+        orderOnboardingDate: '',
+        orderReferenceNumber: '',
+        orderFriendlyImage: null,
+        typeOfWork: '',
+        workCompletionDate: '',
+        documentsProvided: null,
+        invoiceForCustomer: null,
+        totalInvoiceValue: '',
+        totalGstGovtFees: '',
+        paymentExpectedDate: ''
       })
 
       setVendorData({
@@ -481,14 +549,69 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
             >
               <h3 className="text-lg font-semibold text-blue-700 flex items-center">
                 <User className="w-5 h-5 mr-2" />
-                Customer Information
+                Customer & Order Information
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Order Onboarding Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Order Onboarding Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="orderOnboardingDate"
+                    value={customerData.orderOnboardingDate}
+                    onChange={handleCustomerChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.orderOnboardingDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.orderOnboardingDate && <p className="text-red-500 text-sm mt-1">{errors.orderOnboardingDate}</p>}
+                </div>
+
+                {/* Order Reference Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Hash className="inline h-4 w-4 mr-1" />
+                    Order Reference Number (Auto Generated)
+                  </label>
+                  <input
+                    type="text"
+                    name="orderReferenceNumber"
+                    value={customerData.orderReferenceNumber}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Auto generated with IS-"
+                    readOnly
+                  />
+                </div>
+
+                {/* Order Friendly Image */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Upload className="inline h-4 w-4 mr-1" />
+                    Order Friendly Image *
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleCustomerFileChange(e, 'orderFriendlyImage')}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.orderFriendlyImage ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.orderFriendlyImage && <p className="text-red-500 text-sm mt-1">{errors.orderFriendlyImage}</p>}
+                  {customerData.orderFriendlyImage && (
+                    <p className="text-sm text-green-600 mt-1">✓ {customerData.orderFriendlyImage.name}</p>
+                  )}
+                </div>
+
                 {/* Customer Selection */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Customer *
+                    <User className="inline h-4 w-4 mr-1" />
+                    Customer *
                   </label>
                   <select
                     name="customerId"
@@ -501,96 +624,147 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
                     <option value="">Select customer</option>
                     {customers.map((customer: any) => (
                       <option key={customer.id} value={customer.id}>
-                        {customer.name} - {customer.company}
+                        {customer.company} - {customer.name}
                       </option>
                     ))}
                   </select>
                   {errors.customerId && <p className="text-red-500 text-sm mt-1">{errors.customerId}</p>}
                 </div>
 
-                {/* Customer Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="customerName"
-                    value={customerData.customerName}
-                    onChange={handleCustomerChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.customerName ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Customer name"
-                    readOnly
-                  />
-                  {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
-                </div>
-
-                {/* Customer Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="customerEmail"
-                    value={customerData.customerEmail}
-                    onChange={handleCustomerChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                      errors.customerEmail ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Customer email"
-                    readOnly
-                  />
-                  {errors.customerEmail && <p className="text-red-500 text-sm mt-1">{errors.customerEmail}</p>}
-                </div>
-
-                {/* Customer Company */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    name="customerCompany"
-                    value={customerData.customerCompany}
-                    onChange={handleCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Company name"
-                    readOnly
-                  />
-                </div>
-
-                {/* Customer Phone */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    name="customerPhone"
-                    value={customerData.customerPhone}
-                    onChange={handleCustomerChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Phone number"
-                    readOnly
-                  />
-                </div>
-
-                {/* Customer Address */}
+                {/* Type of Work */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address
+                    <FileText className="inline h-4 w-4 mr-1" />
+                    Type of Work *
                   </label>
-                  <textarea
-                    name="customerAddress"
-                    value={customerData.customerAddress}
+                  <select
+                    name="typeOfWork"
+                    value={customerData.typeOfWork}
                     onChange={handleCustomerChange}
-                    rows={3}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.typeOfWork ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select type of work</option>
+                    {workTypes.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                  {errors.typeOfWork && <p className="text-red-500 text-sm mt-1">{errors.typeOfWork}</p>}
+                </div>
+
+                {/* Date of Work Completion Expected */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of Work Completion Expected *
+                  </label>
+                  <input
+                    type="date"
+                    name="workCompletionDate"
+                    value={customerData.workCompletionDate}
+                    onChange={handleCustomerChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.workCompletionDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.workCompletionDate && <p className="text-red-500 text-sm mt-1">{errors.workCompletionDate}</p>}
+                </div>
+
+                {/* Date of Payment Expected */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of Payment Expected *
+                  </label>
+                  <input
+                    type="date"
+                    name="paymentExpectedDate"
+                    value={customerData.paymentExpectedDate}
+                    onChange={handleCustomerChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.paymentExpectedDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.paymentExpectedDate && <p className="text-red-500 text-sm mt-1">{errors.paymentExpectedDate}</p>}
+                </div>
+
+                {/* Documents Provided */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Upload className="inline h-4 w-4 mr-1" />
+                    Documents Provided (as part of order) *
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => handleCustomerFileChange(e, 'documentsProvided')}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.documentsProvided ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.documentsProvided && <p className="text-red-500 text-sm mt-1">{errors.documentsProvided}</p>}
+                  {customerData.documentsProvided && (
+                    <p className="text-sm text-green-600 mt-1">✓ {customerData.documentsProvided.name}</p>
+                  )}
+                </div>
+
+                {/* Invoice for Customer */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Upload className="inline h-4 w-4 mr-1" />
+                    Invoice for the Customer *
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => handleCustomerFileChange(e, 'invoiceForCustomer')}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.invoiceForCustomer ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.invoiceForCustomer && <p className="text-red-500 text-sm mt-1">{errors.invoiceForCustomer}</p>}
+                  {customerData.invoiceForCustomer && (
+                    <p className="text-sm text-green-600 mt-1">✓ {customerData.invoiceForCustomer.name}</p>
+                  )}
+                </div>
+
+                {/* Total Invoice Value */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="inline h-4 w-4 mr-1" />
+                    Total Invoice Value *
+                  </label>
+                  <input
+                    type="number"
+                    name="totalInvoiceValue"
+                    value={customerData.totalInvoiceValue}
+                    onChange={handleCustomerChange}
+                    min="0"
+                    step="0.01"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      errors.totalInvoiceValue ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter total invoice value"
+                  />
+                  {errors.totalInvoiceValue && <p className="text-red-500 text-sm mt-1">{errors.totalInvoiceValue}</p>}
+                </div>
+
+                {/* Total GST + Govt Fees */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="inline h-4 w-4 mr-1" />
+                    Total value of GST + Govt fees
+                  </label>
+                  <input
+                    type="number"
+                    name="totalGstGovtFees"
+                    value={customerData.totalGstGovtFees}
+                    onChange={handleCustomerChange}
+                    min="0"
+                    step="0.01"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="Customer address"
-                    readOnly
+                    placeholder="Enter GST + Government fees"
                   />
                 </div>
               </div>
