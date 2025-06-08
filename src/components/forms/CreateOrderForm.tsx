@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, FileText, User, Building2, Globe, DollarSign, Calendar, AlertTriangle, CheckCircle, Circle, Upload, Hash } from 'lucide-react'
+import { X, FileText, User, Building2, Globe, DollarSign, Calendar, AlertTriangle, CheckCircle, Circle, Upload, Hash, AlertCircle, MessageSquare } from 'lucide-react'
 import anime from 'animejs'
 
 interface CreateOrderFormProps {
@@ -39,6 +39,16 @@ interface VendorFormData {
   vendorCompany: string
   vendorSpecialization: string
   vendorPhone: string
+  // New fields from specification
+  onboardingDate: string
+  currentStatus: string
+  statusComment: string
+  statusChangeDate: string
+  workCompletionExpected: string
+  documentsProvided: File | null
+  invoiceFromVendor: File | null
+  amountToBePaid: string
+  amountPaidToVendor: string
 }
 
 interface OrderFormData {
@@ -81,6 +91,14 @@ const countries = [
   'France', 'Italy', 'Spain', 'Netherlands', 'Japan', 'India', 'Brazil'
 ]
 
+const vendorStatusOptions = [
+  { value: 'YET_TO_START', label: 'Yet to start' },
+  { value: 'PENDING_WITH_CLIENT', label: 'Pending with client' },
+  { value: 'PENDING_WITH_VENDOR', label: 'Pending with Vendor' },
+  { value: 'BLOCKED', label: 'blocked' },
+  { value: 'COMPLETED', label: 'completed' }
+]
+
 const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) => {
   const [activeSection, setActiveSection] = useState<FormSection>('customer')
   const [completedSections, setCompletedSections] = useState<Set<FormSection>>(new Set())
@@ -110,7 +128,17 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     vendorEmail: '',
     vendorCompany: '',
     vendorSpecialization: '',
-    vendorPhone: ''
+    vendorPhone: '',
+    // New fields from specification
+    onboardingDate: '',
+    currentStatus: '',
+    statusComment: '',
+    statusChangeDate: '',
+    workCompletionExpected: '',
+    documentsProvided: null,
+    invoiceFromVendor: null,
+    amountToBePaid: '',
+    amountPaidToVendor: ''
   })
 
   const [orderData, setOrderData] = useState<OrderFormData>({
@@ -188,12 +216,35 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     }
   }
 
+  const handleVendorFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0] || null
+    setVendorData(prev => ({ ...prev, [fieldName]: file }))
+    // Clear error when file is selected
+    if (errors[fieldName]) {
+      setErrors(prev => ({ ...prev, [fieldName]: '' }))
+    }
+  }
+
   const handleVendorChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setVendorData(prev => ({ ...prev, [name]: value }))
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
+    }
+  }
+
+  const handleVendorStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target
+    const currentDate = new Date().toISOString().split('T')[0]
+    setVendorData(prev => ({
+      ...prev,
+      currentStatus: value,
+      statusChangeDate: currentDate
+    }))
+    // Clear error when field is filled
+    if (errors.currentStatus) {
+      setErrors(prev => ({ ...prev, currentStatus: '' }))
     }
   }
 
@@ -238,23 +289,25 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     const selectedVendor = vendors.find((v: any) => v.id === vendorId)
 
     if (selectedVendor) {
-      setVendorData({
+      setVendorData(prev => ({
+        ...prev,
         vendorId,
         vendorName: selectedVendor.name || '',
         vendorEmail: selectedVendor.email || '',
         vendorCompany: selectedVendor.company || '',
         vendorSpecialization: selectedVendor.specialization || '',
         vendorPhone: selectedVendor.phone || ''
-      })
+      }))
     } else {
-      setVendorData({
+      setVendorData(prev => ({
+        ...prev,
         vendorId: '',
         vendorName: '',
         vendorEmail: '',
         vendorCompany: '',
         vendorSpecialization: '',
         vendorPhone: ''
-      })
+      }))
     }
   }
 
@@ -280,9 +333,14 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
   const validateVendorForm = () => {
     const newErrors: Record<string, string> = {}
 
+    // Original required fields
     if (!vendorData.vendorId) newErrors.vendorId = 'Vendor selection is required'
     if (!vendorData.vendorName.trim()) newErrors.vendorName = 'Vendor name is required'
     if (!vendorData.vendorEmail.trim()) newErrors.vendorEmail = 'Vendor email is required'
+
+    // New required fields from specification
+    if (!vendorData.onboardingDate) newErrors.onboardingDate = 'Date of onboarding vendor is required'
+    if (!vendorData.currentStatus) newErrors.currentStatus = 'Current status is required'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -421,7 +479,17 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
         vendorEmail: '',
         vendorCompany: '',
         vendorSpecialization: '',
-        vendorPhone: ''
+        vendorPhone: '',
+        // New fields from specification
+        onboardingDate: '',
+        currentStatus: '',
+        statusComment: '',
+        statusChangeDate: '',
+        workCompletionExpected: '',
+        documentsProvided: null,
+        invoiceFromVendor: null,
+        amountToBePaid: '',
+        amountPaidToVendor: ''
       })
 
       setOrderData({
@@ -795,10 +863,29 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Vendor Selection */}
-                <div className="md:col-span-2">
+                {/* Date of Onboarding vendor for this order */}
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Vendor *
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of Onboarding vendor for this order *
+                  </label>
+                  <input
+                    type="date"
+                    name="onboardingDate"
+                    value={vendorData.onboardingDate}
+                    onChange={handleVendorChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                      errors.onboardingDate ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.onboardingDate && <p className="text-red-500 text-sm mt-1">{errors.onboardingDate}</p>}
+                </div>
+
+                {/* Vendor Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <User className="inline h-4 w-4 mr-1" />
+                    Vendor Name *
                   </label>
                   <select
                     name="vendorId"
@@ -811,96 +898,155 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
                     <option value="">Select vendor</option>
                     {vendors.map((vendor: any) => (
                       <option key={vendor.id} value={vendor.id}>
-                        {vendor.name} - {vendor.specialization}
+                        {vendor.company} - {vendor.name}
                       </option>
                     ))}
                   </select>
                   {errors.vendorId && <p className="text-red-500 text-sm mt-1">{errors.vendorId}</p>}
                 </div>
 
-                {/* Vendor Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vendor Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="vendorName"
-                    value={vendorData.vendorName}
-                    onChange={handleVendorChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                      errors.vendorName ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Vendor name"
-                    readOnly
-                  />
-                  {errors.vendorName && <p className="text-red-500 text-sm mt-1">{errors.vendorName}</p>}
-                </div>
-
-                {/* Vendor Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Vendor Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="vendorEmail"
-                    value={vendorData.vendorEmail}
-                    onChange={handleVendorChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
-                      errors.vendorEmail ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Vendor email"
-                    readOnly
-                  />
-                  {errors.vendorEmail && <p className="text-red-500 text-sm mt-1">{errors.vendorEmail}</p>}
-                </div>
-
-                {/* Vendor Company */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Company
-                  </label>
-                  <input
-                    type="text"
-                    name="vendorCompany"
-                    value={vendorData.vendorCompany}
-                    onChange={handleVendorChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                    placeholder="Company name"
-                    readOnly
-                  />
-                </div>
-
-                {/* Vendor Specialization */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Specialization
-                  </label>
-                  <input
-                    type="text"
-                    name="vendorSpecialization"
-                    value={vendorData.vendorSpecialization}
-                    onChange={handleVendorChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                    placeholder="Specialization"
-                    readOnly
-                  />
-                </div>
-
-                {/* Vendor Phone */}
+                {/* Current Status */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
+                    <AlertCircle className="inline h-4 w-4 mr-1" />
+                    Current Status *
+                  </label>
+                  <select
+                    name="currentStatus"
+                    value={vendorData.currentStatus}
+                    onChange={handleVendorStatusChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors ${
+                      errors.currentStatus ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select current status</option>
+                    {vendorStatusOptions.map(status => (
+                      <option key={status.value} value={status.value}>{status.label}</option>
+                    ))}
+                  </select>
+                  {errors.currentStatus && <p className="text-red-500 text-sm mt-1">{errors.currentStatus}</p>}
+                  <p className="text-sm text-gray-500 mt-1">
+                    Options: Yet to start, Pending with client, Pending with Vendor, blocked, completed
+                  </p>
+                </div>
+
+                {/* Status Comment */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <MessageSquare className="inline h-4 w-4 mr-1" />
+                    Comment *
+                  </label>
+                  <textarea
+                    name="statusComment"
+                    value={vendorData.statusComment}
+                    onChange={handleVendorChange}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    placeholder="Anytime the change happens to the status, we need to ask for the comments. All the comments will be stored for showing on order page"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Required when status changes. All comments will be stored for showing on order page.
+                  </p>
+                </div>
+
+                {/* Date of change of status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of change of status
                   </label>
                   <input
-                    type="tel"
-                    name="vendorPhone"
-                    value={vendorData.vendorPhone}
+                    type="date"
+                    name="statusChangeDate"
+                    value={vendorData.statusChangeDate}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    readOnly
+                  />
+                  <p className="text-sm text-gray-500 mt-1">Auto-updated when status changes</p>
+                </div>
+
+                {/* Date of work completion expected from vendor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of work completion expected from vendor
+                  </label>
+                  <input
+                    type="date"
+                    name="workCompletionExpected"
+                    value={vendorData.workCompletionExpected}
                     onChange={handleVendorChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-                    placeholder="Phone number"
-                    readOnly
+                  />
+                </div>
+
+                {/* Documents Provided by vendor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Upload className="inline h-4 w-4 mr-1" />
+                    Documents Provided (as part of order) by vendor
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => handleVendorFileChange(e, 'documentsProvided')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                  />
+                  {vendorData.documentsProvided && (
+                    <p className="text-sm text-green-600 mt-1">✓ {vendorData.documentsProvided.name}</p>
+                  )}
+                </div>
+
+                {/* Invoice from the Vendor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Upload className="inline h-4 w-4 mr-1" />
+                    Invoice from the Vendor
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => handleVendorFileChange(e, 'invoiceFromVendor')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                  />
+                  {vendorData.invoiceFromVendor && (
+                    <p className="text-sm text-green-600 mt-1">✓ {vendorData.invoiceFromVendor.name}</p>
+                  )}
+                </div>
+
+                {/* Amount to be Paid to vendor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="inline h-4 w-4 mr-1" />
+                    Amount to be Paid to vendor
+                  </label>
+                  <input
+                    type="number"
+                    name="amountToBePaid"
+                    value={vendorData.amountToBePaid}
+                    onChange={handleVendorChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    placeholder="Enter amount to be paid"
+                  />
+                </div>
+
+                {/* Amount Paid to vendor */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <DollarSign className="inline h-4 w-4 mr-1" />
+                    Amount Paid to vendor
+                  </label>
+                  <input
+                    type="number"
+                    name="amountPaidToVendor"
+                    value={vendorData.amountPaidToVendor}
+                    onChange={handleVendorChange}
+                    min="0"
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+                    placeholder="Enter amount paid"
                   />
                 </div>
               </div>
