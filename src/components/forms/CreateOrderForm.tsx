@@ -86,13 +86,6 @@ interface OrderFormData {
   lawyerReferenceNumber: string
 }
 
-const orderTypes = [
-  { value: 'PATENT', label: 'Patent' },
-  { value: 'TRADEMARK', label: 'Trademark' },
-  { value: 'COPYRIGHT', label: 'Copyright' },
-  { value: 'DESIGN', label: 'Design' }
-]
-
 const workTypes = [
   { value: 'PATENTS', label: 'Patents' },
   { value: 'TRADEMARKS', label: 'Trademarks' },
@@ -102,18 +95,6 @@ const workTypes = [
   { value: 'AUDIT_SERVICE', label: 'Audit Service' },
   { value: 'AGREEMENT_DRAFTING', label: 'Agreement drafting' },
   { value: 'OTHERS', label: 'Others' }
-]
-
-const priorities = [
-  { value: 'LOW', label: 'Low', color: 'text-green-600' },
-  { value: 'MEDIUM', label: 'Medium', color: 'text-yellow-600' },
-  { value: 'HIGH', label: 'High', color: 'text-orange-600' },
-  { value: 'URGENT', label: 'Urgent', color: 'text-red-600' }
-]
-
-const countries = [
-  'United States', 'United Kingdom', 'Germany', 'Canada', 'Australia',
-  'France', 'Italy', 'Spain', 'Netherlands', 'Japan', 'India', 'Brazil'
 ]
 
 const vendorStatusOptions = [
