@@ -77,6 +77,13 @@ interface OrderFormData {
   priority: string
   amount: string
   dueDate: string
+  // New fields from specification
+  dateOfCompletion: string
+  countryToBeImplemented: string
+  workDocuments: File | null
+  applicationDairyNumber: string
+  dateOfFilingAtPO: string
+  lawyerReferenceNumber: string
 }
 
 const orderTypes = [
@@ -166,7 +173,14 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     country: '',
     priority: '',
     amount: '',
-    dueDate: ''
+    dueDate: '',
+    // New fields from specification
+    dateOfCompletion: '',
+    countryToBeImplemented: '',
+    workDocuments: null,
+    applicationDairyNumber: '',
+    dateOfFilingAtPO: '',
+    lawyerReferenceNumber: ''
   })
 
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -237,6 +251,15 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
   const handleVendorFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = e.target.files?.[0] || null
     setVendorData(prev => ({ ...prev, [fieldName]: file }))
+    // Clear error when file is selected
+    if (errors[fieldName]) {
+      setErrors(prev => ({ ...prev, [fieldName]: '' }))
+    }
+  }
+
+  const handleOrderFileChange = (e: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = e.target.files?.[0] || null
+    setOrderData(prev => ({ ...prev, [fieldName]: file }))
     // Clear error when file is selected
     if (errors[fieldName]) {
       setErrors(prev => ({ ...prev, [fieldName]: '' }))
@@ -367,14 +390,8 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
   const validateOrderForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!orderData.title.trim()) newErrors.title = 'Title is required'
-    if (!orderData.type) newErrors.type = 'Order type is required'
-    if (!orderData.country) newErrors.country = 'Country is required'
-    if (!orderData.priority) newErrors.priority = 'Priority is required'
-    if (!orderData.amount) newErrors.amount = 'Amount is required'
-    else if (isNaN(parseFloat(orderData.amount)) || parseFloat(orderData.amount) <= 0) {
-      newErrors.amount = 'Amount must be a valid positive number'
-    }
+    // No required fields in the new Order Part specification
+    // All fields are optional according to the image
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -517,7 +534,14 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
         country: '',
         priority: '',
         amount: '',
-        dueDate: ''
+        dueDate: '',
+        // New fields from specification
+        dateOfCompletion: '',
+        countryToBeImplemented: '',
+        workDocuments: null,
+        applicationDairyNumber: '',
+        dateOfFilingAtPO: '',
+        lawyerReferenceNumber: ''
       })
 
       setCompletedSections(new Set())
@@ -1095,137 +1119,102 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Order Title */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Order Title *
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    value={orderData.title}
-                    onChange={handleOrderChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                      errors.title ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter order title"
-                  />
-                  {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
-                </div>
-
-                {/* Description */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={orderData.description}
-                    onChange={handleOrderChange}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                    placeholder="Enter order description"
-                  />
-                </div>
-
-                {/* Order Type */}
+                {/* Date of Completion of order */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Order Type *
-                  </label>
-                  <select
-                    name="type"
-                    value={orderData.type}
-                    onChange={handleOrderChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                      errors.type ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select order type</option>
-                    {orderTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
-                  {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
-                </div>
-
-                {/* Country */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country *
-                  </label>
-                  <select
-                    name="country"
-                    value={orderData.country}
-                    onChange={handleOrderChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                      errors.country ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select country</option>
-                    {countries.map(country => (
-                      <option key={country} value={country}>{country}</option>
-                    ))}
-                  </select>
-                  {errors.country && <p className="text-red-500 text-sm mt-1">{errors.country}</p>}
-                </div>
-
-                {/* Priority */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Priority *
-                  </label>
-                  <select
-                    name="priority"
-                    value={orderData.priority}
-                    onChange={handleOrderChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                      errors.priority ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select priority</option>
-                    {priorities.map(priority => (
-                      <option key={priority.value} value={priority.value} className={priority.color}>
-                        {priority.label}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.priority && <p className="text-red-500 text-sm mt-1">{errors.priority}</p>}
-                </div>
-
-                {/* Amount */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Amount (USD) *
-                  </label>
-                  <input
-                    type="number"
-                    name="amount"
-                    value={orderData.amount}
-                    onChange={handleOrderChange}
-                    min="0"
-                    step="0.01"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                      errors.amount ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter amount"
-                  />
-                  {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
-                </div>
-
-                {/* Due Date */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Due Date
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of Completion of order
                   </label>
                   <input
                     type="date"
-                    name="dueDate"
-                    value={orderData.dueDate}
+                    name="dateOfCompletion"
+                    value={orderData.dateOfCompletion}
                     onChange={handleOrderChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
                   />
                 </div>
+
+                {/* Country to be Implemented in */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <FileText className="inline h-4 w-4 mr-1" />
+                    Country to be Implemented in
+                  </label>
+                  <input
+                    type="text"
+                    name="countryToBeImplemented"
+                    value={orderData.countryToBeImplemented}
+                    onChange={handleOrderChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="Enter country to be implemented in"
+                  />
+                </div>
+
+                {/* Work Documents */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Upload className="inline h-4 w-4 mr-1" />
+                    Work Documents
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => handleOrderFileChange(e, 'workDocuments')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  />
+                  {orderData.workDocuments && (
+                    <p className="text-sm text-green-600 mt-1">✓ {orderData.workDocuments.name}</p>
+                  )}
+                </div>
+
+                {/* Application/Dairy Number */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Hash className="inline h-4 w-4 mr-1" />
+                    Application/Dairy Number
+                  </label>
+                  <input
+                    type="text"
+                    name="applicationDairyNumber"
+                    value={orderData.applicationDairyNumber}
+                    onChange={handleOrderChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="Enter application/dairy number"
+                  />
+                </div>
+
+                {/* Date of Filing at PO */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Calendar className="inline h-4 w-4 mr-1" />
+                    Date of Filing at PO
+                  </label>
+                  <input
+                    type="date"
+                    name="dateOfFilingAtPO"
+                    value={orderData.dateOfFilingAtPO}
+                    onChange={handleOrderChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  />
+                </div>
+
+                {/* Lawyer Reference Number */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Hash className="inline h-4 w-4 mr-1" />
+                    Lawyer Reference Number
+                  </label>
+                  <input
+                    type="text"
+                    name="lawyerReferenceNumber"
+                    value={orderData.lawyerReferenceNumber}
+                    onChange={handleOrderChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                    placeholder="Enter lawyer reference number"
+                  />
+                </div>
+
+
               </div>
 
               <div className="flex justify-end">
