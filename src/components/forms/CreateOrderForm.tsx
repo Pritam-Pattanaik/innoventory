@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { X, FileText, User, Building2, Globe, DollarSign, Calendar, AlertTriangle, CheckCircle, Circle, Upload, Hash, AlertCircle, MessageSquare } from 'lucide-react'
+import { X, FileText, User, Building2, DollarSign, Calendar, CheckCircle, Circle, Upload, Hash, AlertCircle, MessageSquare } from 'lucide-react'
 import anime from 'animejs'
 
 interface CreateOrderFormProps {
@@ -12,6 +12,24 @@ interface CreateOrderFormProps {
 }
 
 type FormSection = 'customer' | 'vendor' | 'order'
+
+interface Customer {
+  id: string
+  name: string
+  email: string
+  company: string
+  phone: string
+  address: string
+}
+
+interface Vendor {
+  id: string
+  name: string
+  email: string
+  company: string
+  specialization: string
+  phone: string
+}
 
 interface CustomerFormData {
   customerId: string
@@ -151,8 +169,8 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
     dueDate: ''
   })
 
-  const [customers, setCustomers] = useState([])
-  const [vendors, setVendors] = useState([])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [vendors, setVendors] = useState<Vendor[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -259,7 +277,7 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
 
   const handleCustomerSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const customerId = e.target.value
-    const selectedCustomer = customers.find((c: any) => c.id === customerId)
+    const selectedCustomer = customers.find((c: Customer) => c.id === customerId)
 
     if (selectedCustomer) {
       setCustomerData(prev => ({
@@ -286,7 +304,7 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
 
   const handleVendorSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const vendorId = e.target.value
-    const selectedVendor = vendors.find((v: any) => v.id === vendorId)
+    const selectedVendor = vendors.find((v: Vendor) => v.id === vendorId)
 
     if (selectedVendor) {
       setVendorData(prev => ({
@@ -690,7 +708,7 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
                     }`}
                   >
                     <option value="">Select customer</option>
-                    {customers.map((customer: any) => (
+                    {customers.map((customer: Customer) => (
                       <option key={customer.id} value={customer.id}>
                         {customer.company} - {customer.name}
                       </option>
@@ -896,7 +914,7 @@ const CreateOrderForm = ({ isOpen, onClose, onSuccess }: CreateOrderFormProps) =
                     }`}
                   >
                     <option value="">Select vendor</option>
-                    {vendors.map((vendor: any) => (
+                    {vendors.map((vendor: Vendor) => (
                       <option key={vendor.id} value={vendor.id}>
                         {vendor.company} - {vendor.name}
                       </option>
